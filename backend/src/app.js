@@ -1,18 +1,24 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const userRoutes = require('./routes/userRoutes'); // Asegúrate que esta ruta sea correcta
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
 // Configuración básica de middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173'
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
+
+app.use(express.json()); // Para parsear application/json
+app.use(express.urlencoded({ extended: true })); // Para parsear application/x-www-form-urlencoded
 
 // Rutas
-app.use('/api', userRoutes);
+app.use('/api', userRoutes); // Esto hará que todas las rutas empiecen con /api
+
+
 
 // Manejador de rutas no encontradas
 app.use((req, res) => {

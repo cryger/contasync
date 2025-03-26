@@ -1,73 +1,148 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, TextField, MenuItem, CircularProgress, Alert } from "@mui/material";
-import { Formik } from "formik";
+import { Box, Button, TextField, MenuItem, CircularProgress, Alert, Grid, Paper, Typography, IconButton, Tooltip } from "@mui/material";
+import { useFormik } from "formik";
 import * as yup from "yup";
-import { useNavigate } from "react-router-dom";
+import { Edit, Delete } from "@mui/icons-material";
 import api from '../../api/api';
 
+// Definir los roles únicos (ajusta los IDs según tu base de datos)
+const UNIQUE_ROLES = {
+  ADMINISTRADOR: 1,
+  CONTABLE: 2,
+  INVERSIONISTA: 3
+};
+
 const validationSchema = yup.object().shape({
-  firstName: yup.string().required("Nombre es requerido"),
-  lastName: yup.string().required("Apellido es requerido"),
+  nombre: yup.string().required("Nombre es requerido"),
   email: yup.string().email("Email inválido").required("Email es requerido"),
-  password: yup.string().min(8, "Mínimo 8 caracteres").required("Contraseña es requerida"),
-  roleId: yup.string().required("Rol es requerido"),
-  contact: yup.string(),
-  address1: yup.string(),
-  address2: yup.string()
+  contrasena: yup.string()
+    .min(8, "Mínimo 8 caracteres")
+    .required("Contraseña es requerida"),
+  rol_id: yup.string().required("Debe seleccionar un rol")
 });
 
-const Form = () => {
+const UserForm = () => {
   const [roles, setRoles] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const navigate = useNavigate();
+  const [success, setSuccess] = useState("");
+  const [editingUserId, setEditingUserId] = useState(null);
 
-  // Obtener roles al cargar el componente
-  useEffect(() => {
-    const fetchRoles = async () => {
+  const formik = useFormik({
+    initialValues: {
+      nombre: "",
+      email: "",
+      contrasena: "",
+      rol_id: "",
+    },
+    validationSchema,
+    onSubmit: async (values, { setSubmitting, resetForm }) => {
       try {
-        const response = await api.get('/roles');
-        setRoles(response.data);
+        setError("");
+        setSuccess("");
+        
+        // Verificar rol único si es necesario
+        const selectedRoleId = parseInt(values.rol_id);
+        if (Object.values(UNIQUE_ROLES).includes(selectedRoleId)) {
+          const existingUser = users.find(user => 
+            user.rol_id === selectedRoleId && 
+            (!editingUserId || user.id !== editingUserId)
+          );
+          
+          if (existingUser) {
+            const roleName = roles.find(r => r.id === selectedRoleId)?.nombre || 'este rol';
+            throw new Error(`Ya existe un usuario con ${roleName}. Elimínelo primero para asignarlo a otro usuario.`);
+          }
+        }
+
+        const userData = {
+          nombre: values.nombre,
+          email: values.email,
+          rol_id: values.rol_id,
+        };
+
+        if (!editingUserId || values.contrasena) {
+          userData.contrasena = values.contrasena;
+        }
+
+        if (editingUserId) {
+          await api.put(`/usuarios/${editingUserId}`, userData);
+          setSuccess("Usuario actualizado exitosamente!");
+        } else {
+          await api.post('/usuarios', userData);
+          setSuccess("Usuario creado exitosamente!");
+        }
+        
+        const { data } = await api.get('/usuarios');
+        setUsers(data);
+        resetForm();
+        setEditingUserId(null);
       } catch (err) {
-        setError("Error al cargar roles");
-        console.error("Error fetching roles:", err);
+        setError(err.response?.data?.error || err.message || "Error al procesar la solicitud");
+      } finally {
+        setSubmitting(false);
+      }
+    }
+  });
+
+  // Cargar datos iniciales
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        
+        const [rolesResponse, usersResponse] = await Promise.all([
+          api.get('/roles'),
+          api.get('/usuarios')
+        ]);
+        
+        setRoles(rolesResponse.data);
+        setUsers(usersResponse.data);
+      } catch (err) {
+        console.error("Error cargando datos:", err);
+        setError(`Error al cargar datos: ${err.message}`);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchRoles();
+    fetchData();
   }, []);
 
-  // Función para enviar el formulario
-  const handleSubmit = async (values, { setSubmitting, resetForm }) => {
-    try {
-      setError("");
-      
-      const userData = {
-        firstName: values.firstName,
-        lastName: values.lastName,
-        email: values.email,
-        password: values.password,
-        roleId: values.roleId,
-        contact: values.contact,
-        address1: values.address1,
-        address2: values.address2
-      };
+  // Editar usuario
+  const handleEdit = (user) => {
+    setEditingUserId(user.id);
+    formik.setValues({
+      nombre: user.nombre,
+      email: user.email,
+      contrasena: '',
+      rol_id: user.rol_id.toString(),
+    });
+    // Desplazarse al formulario
+    document.getElementById('user-form')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
-      const response = await api.post('/users', userData);
-      
-      console.log("Usuario creado:", response.data);
-      resetForm();
-      navigate("/success"); // Redirige a página de éxito
-      
-    } catch (err) {
-      const errorMessage = err.response?.data?.error || 
-                         "Error al crear usuario";
-      setError(errorMessage);
-    } finally {
-      setSubmitting(false);
+  // Eliminar usuario
+  const handleDelete = async (userId) => {
+    if (window.confirm("¿Estás seguro de eliminar este usuario?")) {
+      try {
+        await api.delete(`/usuarios/${userId}`);
+        setUsers(users.filter(user => user.id !== userId));
+        setSuccess("Usuario eliminado exitosamente!");
+      } catch (err) {
+        setError(err.response?.data?.message || "Error al eliminar usuario");
+      }
     }
+  };
+
+  // Verificar si un rol está actualmente en uso
+  const isRoleInUse = (roleId) => {
+    return users.some(user => 
+      user.rol_id === roleId && 
+      (!editingUserId || user.id !== editingUserId)
+    );
   };
 
   if (loading) {
@@ -80,89 +155,217 @@ const Form = () => {
 
   return (
     <Box m="20px">
-    {/* Elimina el componente Header */}
-    <h1>CREATE USER</h1>
-    <h2>Create a New User Profile</h2>
-    
-    {error && (
-      <Alert severity="error" sx={{ mb: 3 }}>
-        {error}
-      </Alert>
-    )}
+      <Typography variant="h4" gutterBottom>
+        Gestión de Usuarios
+      </Typography>
 
-      <Formik
-        initialValues={{
-          firstName: "",
-          lastName: "",
-          email: "",
-          password: "",
-          contact: "",
-          address1: "",
-          address2: "",
-          roleId: ""
-        }}
-        validationSchema={validationSchema}
-        onSubmit={handleSubmit}
-      >
-        {({
-          values,
-          errors,
-          touched,
-          handleBlur,
-          handleChange,
-          handleSubmit,
-          isSubmitting
-        }) => (
-          <form onSubmit={handleSubmit}>
-            {/* Campos del formulario */}
-            <TextField
-              fullWidth
-              variant="filled"
-              type="text"
-              label="Nombre"
-              name="firstName"
-              value={values.firstName}
-              onChange={handleChange}
-              error={touched.firstName && !!errors.firstName}
-              helperText={touched.firstName && errors.firstName}
-              sx={{ gridColumn: "span 2", mb: 2 }}
-            />
-            
-            {/* Repite para los otros campos */}
-            
-            <TextField
-              select
-              fullWidth
-              variant="filled"
-              label="Rol"
-              name="roleId"
-              value={values.roleId}
-              onChange={handleChange}
-              error={touched.roleId && !!errors.roleId}
-              helperText={touched.roleId && errors.roleId}
-              sx={{ mb: 2 }}
-            >
-              <MenuItem value="">Seleccione un rol</MenuItem>
-              {roles.map((role) => (
-                <MenuItem key={role.id} value={role.id}>
-                  {role.nombre}
-                </MenuItem>
-              ))}
-            </TextField>
+      <Grid container spacing={3}>
+        {/* Formulario */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3 }} id="user-form">
+            <Typography variant="h6" gutterBottom>
+              {editingUserId ? `Editando Usuario ID: ${editingUserId}` : "Crear Nuevo Usuario"}
+            </Typography>
 
-            <Button 
-              type="submit" 
-              variant="contained" 
-              disabled={isSubmitting}
-              sx={{ mt: 2 }}
-            >
-              {isSubmitting ? <CircularProgress size={24} /> : "Crear Usuario"}
-            </Button>
-          </form>
-        )}
-      </Formik>
+            <form onSubmit={formik.handleSubmit}>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Nombre Completo"
+                    name="nombre"
+                    value={formik.values.nombre}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    error={formik.touched.nombre && Boolean(formik.errors.nombre)}
+                    helperText={formik.touched.nombre && formik.errors.nombre}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Email"
+                    name="email"
+                    type="email"
+                    value={formik.values.email}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    error={formik.touched.email && Boolean(formik.errors.email)}
+                    helperText={formik.touched.email && formik.errors.email}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label={editingUserId ? "Nueva Contraseña (opcional)" : "Contraseña"}
+                    name="contrasena"
+                    type="password"
+                    value={formik.values.contrasena}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    error={formik.touched.contrasena && Boolean(formik.errors.contrasena)}
+                    helperText={formik.touched.contrasena && formik.errors.contrasena}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    select
+                    fullWidth
+                    label="Rol"
+                    name="rol_id"
+                    value={formik.values.rol_id}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    error={formik.touched.rol_id && Boolean(formik.errors.rol_id)}
+                    helperText={formik.touched.rol_id && formik.errors.rol_id}
+                  >
+                    <MenuItem value="" disabled>
+                      Seleccione un rol
+                    </MenuItem>
+                    {roles.map((role) => (
+                      <MenuItem 
+                        key={role.id} 
+                        value={role.id}
+                        disabled={
+                          Object.values(UNIQUE_ROLES).includes(role.id) && 
+                          isRoleInUse(role.id) &&
+                          (!editingUserId || users.find(u => u.id === editingUserId)?.rol_id !== role.id)
+                        }
+                      >
+                        {role.nombre}
+                        {Object.values(UNIQUE_ROLES).includes(role.id) && isRoleInUse(role.id) && (
+                          <span style={{ color: '#ff9800', marginLeft: '8px', fontSize: '0.7rem' }}>
+                            (En uso)
+                          </span>
+                        )}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    disabled={formik.isSubmitting}
+                  >
+                    {formik.isSubmitting ? (
+                      <CircularProgress size={24} />
+                    ) : editingUserId ? (
+                      "ACTUALIZAR USUARIO"
+                    ) : (
+                      "CREAR USUARIO"
+                    )}
+                  </Button>
+                </Grid>
+              </Grid>
+            </form>
+          </Paper>
+        </Grid>
+
+        {/* Lista de usuarios */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, maxHeight: '70vh', overflow: 'auto' }}>
+            <Typography variant="h6" gutterBottom>
+              Lista de Usuarios ({users.length})
+            </Typography>
+
+            {users.length === 0 ? (
+              <Alert severity="info">No hay usuarios registrados</Alert>
+            ) : (
+              <Grid container spacing={2}>
+                {users.map((user) => (
+                  <Grid item xs={12} key={user.id}>
+                    <Paper sx={{ 
+                      p: 2, 
+                      position: 'relative',
+                      border: editingUserId === user.id ? '2px solid #1976d2' : 'none',
+                      backgroundColor: editingUserId === user.id ? 'rgba(25, 118, 210, 0.08)' : 'inherit'
+                    }}>
+                      <Typography variant="subtitle1">
+                        {user.nombre} - {user.email}
+                        {editingUserId === user.id && (
+                          <span style={{ color: '#1976d2', marginLeft: '8px', fontSize: '0.8rem' }}>
+                            (Editando)
+                          </span>
+                        )}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Rol:</strong> {roles.find(r => r.id === user.rol_id)?.nombre || 'Desconocido'}
+                        {Object.values(UNIQUE_ROLES).includes(user.rol_id) && (
+                          <span style={{ color: '#ff9800', marginLeft: '8px', fontSize: '0.7rem' }}>
+                            (Único)
+                          </span>
+                        )}
+                      </Typography>
+                      
+                      {/* Contenedor de botones - Editar y Eliminar */}
+                      <Box sx={{ 
+                        position: 'absolute', 
+                        top: 8, 
+                        right: 8,
+                        display: 'flex',
+                        gap: '8px'
+                      }}>
+                        {/* Botón de Editar */}
+                        <Tooltip title="Editar usuario">
+                          <IconButton 
+                            color={editingUserId === user.id ? "secondary" : "primary"}
+                            onClick={() => handleEdit(user)}
+                            size="small"
+                            sx={{
+                              '&:hover': {
+                                backgroundColor: 'rgba(25, 118, 210, 0.1)'
+                              }
+                            }}
+                          >
+                            <Edit fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        
+                        {/* Botón de Eliminar */}
+                        <Tooltip title="Eliminar usuario">
+                          <IconButton 
+                            color="error" 
+                            onClick={() => handleDelete(user.id)}
+                            size="small"
+                            sx={{
+                              '&:hover': {
+                                backgroundColor: 'rgba(244, 67, 54, 0.1)'
+                              }
+                            }}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* Mensajes de feedback */}
+      {error && (
+        <Alert severity="error" sx={{ mt: 2 }} onClose={() => setError("")}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" sx={{ mt: 2 }} onClose={() => setSuccess("")}>
+          {success}
+        </Alert>
+      )}
     </Box>
   );
 };
 
-export default Form;
+export default UserForm;
