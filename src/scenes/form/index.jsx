@@ -5,13 +5,6 @@ import * as yup from "yup";
 import { Edit, Delete } from "@mui/icons-material";
 import api from '../../api/api';
 
-// Definir los roles únicos (ajusta los IDs según tu base de datos)
-const UNIQUE_ROLES = {
-  ADMINISTRADOR: 1,
-  CONTABLE: 2,
-  INVERSIONISTA: 3
-};
-
 const validationSchema = yup.object().shape({
   nombre: yup.string().required("Nombre es requerido"),
   email: yup.string().email("Email inválido").required("Email es requerido"),
@@ -41,20 +34,6 @@ const UserForm = () => {
       try {
         setError("");
         setSuccess("");
-        
-        // Verificar rol único si es necesario
-        const selectedRoleId = parseInt(values.rol_id);
-        if (Object.values(UNIQUE_ROLES).includes(selectedRoleId)) {
-          const existingUser = users.find(user => 
-            user.rol_id === selectedRoleId && 
-            (!editingUserId || user.id !== editingUserId)
-          );
-          
-          if (existingUser) {
-            const roleName = roles.find(r => r.id === selectedRoleId)?.nombre || 'este rol';
-            throw new Error(`Ya existe un usuario con ${roleName}. Elimínelo primero para asignarlo a otro usuario.`);
-          }
-        }
 
         const userData = {
           nombre: values.nombre,
@@ -135,14 +114,6 @@ const UserForm = () => {
         setError(err.response?.data?.message || "Error al eliminar usuario");
       }
     }
-  };
-
-  // Verificar si un rol está actualmente en uso
-  const isRoleInUse = (roleId) => {
-    return users.some(user => 
-      user.rol_id === roleId && 
-      (!editingUserId || user.id !== editingUserId)
-    );
   };
 
   if (loading) {
@@ -229,18 +200,8 @@ const UserForm = () => {
                       <MenuItem 
                         key={role.id} 
                         value={role.id}
-                        disabled={
-                          Object.values(UNIQUE_ROLES).includes(role.id) && 
-                          isRoleInUse(role.id) &&
-                          (!editingUserId || users.find(u => u.id === editingUserId)?.rol_id !== role.id)
-                        }
                       >
                         {role.nombre}
-                        {Object.values(UNIQUE_ROLES).includes(role.id) && isRoleInUse(role.id) && (
-                          <span style={{ color: '#ff9800', marginLeft: '8px', fontSize: '0.7rem' }}>
-                            (En uso)
-                          </span>
-                        )}
                       </MenuItem>
                     ))}
                   </TextField>
@@ -297,11 +258,6 @@ const UserForm = () => {
                       </Typography>
                       <Typography variant="body2">
                         <strong>Rol:</strong> {roles.find(r => r.id === user.rol_id)?.nombre || 'Desconocido'}
-                        {Object.values(UNIQUE_ROLES).includes(user.rol_id) && (
-                          <span style={{ color: '#ff9800', marginLeft: '8px', fontSize: '0.7rem' }}>
-                            (Único)
-                          </span>
-                        )}
                       </Typography>
                       
                       {/* Contenedor de botones - Editar y Eliminar */}
