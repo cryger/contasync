@@ -129,7 +129,7 @@ const SideBar = () => {
           }}
         >
           <Item
-            title="Dashboard"
+            title="Inicio"
             path="/"
             colors={colors}
             icon={<DashboardOutlined />}

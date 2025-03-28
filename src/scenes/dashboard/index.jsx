@@ -124,6 +124,7 @@ function Dashboard() {
   };
 
   return (
+    
     <Box 
       m="20px" 
       ref={pdfRef}
