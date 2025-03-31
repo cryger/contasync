@@ -1,4 +1,4 @@
-import { Box, Typography, useTheme, IconButton, Tooltip, CircularProgress, Alert } from "@mui/material";
+import { Box, Typography, useTheme, IconButton, Tooltip, CircularProgress, Alert, Button } from "@mui/material";
 import { Header } from "../../components";
 import { DataGrid } from "@mui/x-data-grid";
 import { tokens } from "../../theme";
@@ -7,7 +7,8 @@ import {
   LockOpenOutlined,
   SecurityOutlined,
   Edit,
-  Delete
+  Delete,
+  PersonAdd
 } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 import api from '../../api/api';
@@ -27,7 +28,9 @@ const Team = () => {
     const fetchUsers = async () => {
       try {
         const { data } = await api.get('/usuarios');
-        setUsers(data);
+        // Ordenar usuarios por ID de forma ascendente
+        const sortedUsers = data.sort((a, b) => a.id - b.id);
+        setUsers(sortedUsers);
       } catch (err) {
         setError(err.response?.data?.error || err.message || "Error al cargar usuarios");
       } finally {
@@ -56,6 +59,11 @@ const Team = () => {
   // Editar usuario
   const handleEdit = (userId) => {
     navigate(`/form?id=${userId}`);
+  };
+
+  // Crear nuevo usuario
+  const handleCreateUser = () => {
+    navigate('/form');
   };
 
   // Función para determinar el icono y color según el rol
@@ -174,10 +182,23 @@ const Team = () => {
       <Header 
         title="EQUIPO" 
         subtitle="Gestión de miembros del equipo" 
-        addButton 
-        addButtonText="Nuevo Usuario" 
-        addButtonLink="/form" 
       />
+      
+      <Box display="flex" justifyContent="flex-end" mb={2}>
+        <Button
+          variant="contained"
+          startIcon={<PersonAdd />}
+          onClick={handleCreateUser}
+          sx={{
+            backgroundColor: colors.greenAccent[600],
+            "&:hover": {
+              backgroundColor: colors.greenAccent[700],
+            }
+          }}
+        >
+          Crear Usuario
+        </Button>
+      </Box>
       
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>
