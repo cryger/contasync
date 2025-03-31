@@ -154,7 +154,7 @@ const SideBar = () => {
           }}
         >
           <Item
-            title="Manage Team"
+            title="Equipo de Trabajo"
             path="/team"
             colors={colors}
             icon={<PeopleAltOutlined />}
@@ -191,7 +191,7 @@ const SideBar = () => {
           }}
         >
           <Item
-            title="Profile Form"
+            title="Registro de Usuarios"
             path="/form"
             colors={colors}
             icon={<PersonOutlined />}

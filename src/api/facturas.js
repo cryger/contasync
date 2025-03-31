@@ -20,7 +20,7 @@ const handleErrors = (res, error) => {
 // GET todas las facturas
 router.get('/', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM facturas ORDER BY id DESC');
+    const { rows } = await pool.query('SELECT * FROM recibos ORDER BY id DESC');
     res.json(rows);
   } catch (error) {
     handleErrors(res, error);
@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const { rows } = await pool.query('SELECT * FROM facturas WHERE id = $1', [id]);
+    const { rows } = await pool.query('SELECT * FROM recibos WHERE id = $1', [id]);
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Factura no encontrada' });
     }
@@ -52,7 +52,7 @@ router.post('/', async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      'INSERT INTO facturas (ingreso_id, gasto_id, fecha, monto) VALUES ($1, $2, $3, $4) RETURNING *',
+      'INSERT INTO recibos (ingreso_id, gasto_id, fecha, monto) VALUES ($1, $2, $3, $4) RETURNING *',
       [ingreso_id, gasto_id, fecha, monto]
     );
     res.status(201).json(rows[0]);
@@ -68,7 +68,7 @@ router.put('/:id', async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      'UPDATE facturas SET ingreso_id = $1, gasto_id = $2, fecha = $3, monto = $4 WHERE id = $5 RETURNING *',
+      'UPDATE recibos SET ingreso_id = $1, gasto_id = $2, fecha = $3, monto = $4 WHERE id = $5 RETURNING *',
       [ingreso_id, gasto_id, fecha, monto, id]
     );
     
@@ -86,7 +86,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const { rowCount } = await pool.query('DELETE FROM facturas WHERE id = $1', [id]);
+    const { rowCount } = await pool.query('DELETE FROM recibos WHERE id = $1', [id]);
     
     if (rowCount === 0) {
       return res.status(404).json({ error: 'Factura no encontrada' });
