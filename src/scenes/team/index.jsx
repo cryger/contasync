@@ -1,67 +1,216 @@
-import { Box, Typography, useTheme } from "@mui/material";
+import { Box, Typography, useTheme, IconButton, Tooltip, CircularProgress, Alert, Button } from "@mui/material";
 import { Header } from "../../components";
 import { DataGrid } from "@mui/x-data-grid";
-import { mockDataTeam } from "../../data/mockData";
 import { tokens } from "../../theme";
 import {
   AdminPanelSettingsOutlined,
   LockOpenOutlined,
   SecurityOutlined,
+  Edit,
+  Delete,
+  PersonAdd
 } from "@mui/icons-material";
+import { useState, useEffect } from "react";
+import api from '../../api/api';
+import { useNavigate } from "react-router-dom";
 
 const Team = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const navigate = useNavigate();
 
+  // Cargar usuarios
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data } = await api.get('/usuarios');
+        // Ordenar usuarios por ID de forma ascendente
+        const sortedUsers = data.sort((a, b) => a.id - b.id);
+        setUsers(sortedUsers);
+      } catch (err) {
+        setError(err.response?.data?.error || err.message || "Error al cargar usuarios");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUsers();
+  }, []);
+
+  // Eliminar usuario
+  const handleDelete = async (userId) => {
+    if (window.confirm("¿Estás seguro de eliminar este usuario?")) {
+      try {
+        await api.delete(`/usuarios/${userId}`);
+        setUsers(users.filter(user => user.id !== userId));
+        setSuccess("Usuario eliminado exitosamente!");
+        
+        setTimeout(() => setSuccess(""), 3000);
+      } catch (err) {
+        setError(err.response?.data?.message || "Error al eliminar usuario");
+      }
+    }
+  };
+
+  // Editar usuario
+  const handleEdit = (userId) => {
+    navigate(`/form?id=${userId}`);
+  };
+
+  // Crear nuevo usuario
+  const handleCreateUser = () => {
+    navigate('/form');
+  };
+
+  // Función para determinar el icono y color según el rol
+  const getAccessDetails = (rolNombre) => {
+    switch(rolNombre) {
+      case 'Administrador':
+        return {
+          icon: <AdminPanelSettingsOutlined />,
+          color: colors.greenAccent[600],
+          label: 'Administrador'
+        };
+      case 'Contable':
+        return {
+          icon: <SecurityOutlined />,
+          color: colors.greenAccent[700],
+          label: 'Contable'
+        };
+      case 'Inversionista':
+        return {
+          icon: <LockOpenOutlined />,
+          color: colors.greenAccent[800],
+          label: 'Inversionista'
+        };
+      default:
+        return {
+          icon: <LockOpenOutlined />,
+          color: colors.greenAccent[900],
+          label: 'Usuario'
+        };
+    }
+  };
+
+  // Columnas para DataGrid
   const columns = [
-    { field: "id", headerName: "ID" },
+    { field: "id", headerName: "ID", width: 70 },
     {
-      field: "name",
-      headerName: "Name",
+      field: "nombre",
+      headerName: "Nombre",
       flex: 1,
       cellClassName: "name-column--cell",
     },
     {
-      field: "age",
-      headerName: "Age",
-      type: "number",
-      headerAlign: "left",
-      align: "left",
+      field: "email",
+      headerName: "Email",
+      flex: 1,
     },
-    { field: "phone", headerName: "Phone Number", flex: 1 },
-    { field: "email", headerName: "Email", flex: 1 },
+    {
+      field: "rol_nombre",
+      headerName: "Rol",
+      flex: 1,
+      valueGetter: (params) => params.row.rol_nombre || "Usuario"
+    },
     {
       field: "access",
-      headerName: "Access Level",
+      headerName: "Nivel de Acceso",
       flex: 1,
-      renderCell: ({ row: { access } }) => {
+      renderCell: ({ row }) => {
+        const accessDetails = getAccessDetails(row.rol_nombre);
+        
         return (
           <Box
-            width="120px"
+            width="140px"
             p={1}
             display="flex"
             alignItems="center"
             justifyContent="center"
             gap={1}
-            bgcolor={
-              access === "admin"
-                ? colors.greenAccent[600]
-                : colors.greenAccent[700]
-            }
+            bgcolor={accessDetails.color}
             borderRadius={1}
           >
-            {access === "admin" && <AdminPanelSettingsOutlined />}
-            {access === "manager" && <SecurityOutlined />}
-            {access === "user" && <LockOpenOutlined />}
-            <Typography textTransform="capitalize">{access}</Typography>
+            {accessDetails.icon}
+            <Typography textTransform="capitalize">
+              {accessDetails.label}
+            </Typography>
           </Box>
         );
       },
     },
+    {
+      field: "actions",
+      headerName: "Acciones",
+      width: 120,
+      renderCell: (params) => (
+        <Box display="flex" gap={1}>
+          <Tooltip title="Editar usuario">
+            <IconButton 
+              onClick={() => handleEdit(params.row.id)}
+              sx={{ color: colors.greenAccent[300] }}
+            >
+              <Edit />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Eliminar usuario">
+            <IconButton 
+              onClick={() => handleDelete(params.row.id)}
+              sx={{ color: colors.redAccent[500] }}
+            >
+              <Delete />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      ),
+    },
   ];
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" mt={5}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box m="20px">
-      <Header title="TEAM" subtitle="Managing the Team Members" />
+      <Header 
+        title="EQUIPO" 
+        subtitle="Gestión de miembros del equipo" 
+      />
+      
+      <Box display="flex" justifyContent="flex-end" mb={2}>
+        <Button
+          variant="contained"
+          startIcon={<PersonAdd />}
+          onClick={handleCreateUser}
+          sx={{
+            backgroundColor: colors.greenAccent[600],
+            "&:hover": {
+              backgroundColor: colors.greenAccent[700],
+            }
+          }}
+        >
+          Crear Usuario
+        </Button>
+      </Box>
+      
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess("")}>
+          {success}
+        </Alert>
+      )}
+      
       <Box
         mt="40px"
         height="75vh"
@@ -96,7 +245,7 @@ const Team = () => {
         }}
       >
         <DataGrid
-          rows={mockDataTeam}
+          rows={users}
           columns={columns}
           initialState={{
             pagination: {
@@ -106,6 +255,14 @@ const Team = () => {
             },
           }}
           checkboxSelection
+          disableRowSelectionOnClick
+          localeText={{
+            noRowsLabel: "No hay usuarios registrados",
+            footerRowSelected: (count) =>
+              count !== 1
+                ? `${count.toLocaleString()} usuarios seleccionados`
+                : `${count.toLocaleString()} usuario seleccionado`,
+          }}
         />
       </Box>
     </Box>

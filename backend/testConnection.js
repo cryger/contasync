@@ -5,8 +5,8 @@ const config = {
   user: process.env.DB_USER || 'postgres',
   host: process.env.DB_HOST || 'localhost',
   database: process.env.DB_NAME || 'contasync',
-  password: process.env.DB_PASSWORD || 'diana2000',
-  port: process.env.DB_PORT || 5432,
+  password: process.env.DB_PASSWORD || '123456',
+  port: process.env.DB_PORT || 5433,
 };
 
 const pool = new Pool(config);

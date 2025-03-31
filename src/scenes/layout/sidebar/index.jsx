@@ -154,19 +154,19 @@ const SideBar = () => {
           }}
         >
           <Item
-            title="Manage Team"
+            title="Equipo de Trabajo"
             path="/team"
             colors={colors}
             icon={<PeopleAltOutlined />}
           />
           <Item
-            title="Contacts Information"
+            title="Clientes"
             path="/contacts"
             colors={colors}
             icon={<ContactsOutlined />}
           />
           <Item
-            title="Invoices Balances"
+            title="Facturas"
             path="/invoices"
             colors={colors}
             icon={<ReceiptOutlined />}
@@ -191,7 +191,7 @@ const SideBar = () => {
           }}
         >
           <Item
-            title="Profile Form"
+            title="Registro de Usuarios"
             path="/form"
             colors={colors}
             icon={<PersonOutlined />}
