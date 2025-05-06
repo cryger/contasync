@@ -1,14 +1,15 @@
-const express = require('express');
-const router = express.Router();
-const { Pool } = require('pg');
+import express from 'express';
+import { Pool } from 'pg';
 
-// Configuración de la conexión a PostgreSQL - ajusta estos valores
+const router = express.Router();
+
+// Configuración de la conexión a PostgreSQL
 const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'contasync',
-  password: '123456',
-  port: 5433,
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
 });
 
 // Middleware para manejar errores
@@ -98,4 +99,4 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

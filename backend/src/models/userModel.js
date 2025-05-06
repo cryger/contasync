@@ -28,7 +28,7 @@ module.exports = {
         SELECT u.id, u.nombre, u.email, u.rol_id, u.fecha_creacion, r.nombre as rol_nombre 
         FROM usuarios u
         JOIN roles r ON u.rol_id = r.id
-        WHERE u.id = $1 asc
+        WHERE u.id = $1 order by u.id asc
       `, [id]);
       return rows[0];
     } catch (error) {
