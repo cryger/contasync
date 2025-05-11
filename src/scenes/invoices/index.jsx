@@ -1,127 +1,308 @@
-import { Box, Typography, useTheme, Button, IconButton, Stack } from "@mui/material";
-import { Header } from "../../components";
-import { DataGrid } from "@mui/x-data-grid";
-import { tokens } from "../../theme";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import AddIcon from "@mui/icons-material/Add";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 const Invoices = () => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
+  const [facturas, setFacturas] = useState([]);
+  const [editando, setEditando] = useState(null);
+  const [nuevaFactura, setNuevaFactura] = useState({
+    cliente: "",
+    nit: "",
+    fecha: "",
+    total: "",
+  });
 
-  const [facturas, setFacturas] = useState([
-    { id: 1, cliente: "Juan Pérez", nit: "123456789", fecha: "2024-05-01", total: 50000 },
-    { id: 2, cliente: "Ana Gómez", nit: "987654321", fecha: "2024-05-02", total: 75000 },
-  ]);
+  useEffect(() => {
+    obtenerFacturas();
+  }, []);
 
-  const handleEditar = (id) => {
-    const factura = facturas.find((f) => f.id === id);
-    console.log("Editar factura:", factura);
-    // Aquí podrías abrir un modal o redirigir a un formulario
-  };
-
-  const handleEliminar = (id) => {
-    const confirmacion = window.confirm("¿Estás seguro de que deseas eliminar esta factura?");
-    if (confirmacion) {
-      setFacturas((prev) => prev.filter((f) => f.id !== id));
+  const obtenerFacturas = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/api/facturas");
+      setFacturas(response.data);
+    } catch (error) {
+      console.error("Error al obtener facturas:", error);
+      alert("Error al cargar facturas");
     }
   };
 
-  const handleCrearFactura = () => {
-    console.log("Crear nueva factura");
-    // Aquí podrías abrir un modal o redirigir a un formulario
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    if (editando) {
+      setFacturas(
+        facturas.map((factura) =>
+          factura.id === editando ? { ...factura, [name]: value } : factura
+        )
+      );
+    } else {
+      setNuevaFactura({ ...nuevaFactura, [name]: value });
+    }
   };
 
-  const columns = [
-    { field: "id", headerName: "ID", width: 70 },
-    { field: "cliente", headerName: "Cliente", flex: 1, minWidth: 150 },
-    { field: "nit", headerName: "NIT", flex: 1, minWidth: 120 },
-    { field: "fecha", headerName: "Fecha", flex: 1, minWidth: 120 },
-    {
-      field: "total",
-      headerName: "Total",
-      flex: 1,
-      minWidth: 100,
-      renderCell: (params) => (
-        <Typography color={colors.greenAccent[500]}>
-          ${params.row.total.toLocaleString()}
-        </Typography>
-      ),
-    },
-    {
-      field: "acciones",
-      headerName: "Acciones",
-      width: 150,
-      sortable: false,
-      renderCell: (params) => (
-        <Stack direction="row" spacing={1}>
-          <IconButton color="primary" onClick={() => handleEditar(params.row.id)}>
-            <EditIcon />
-          </IconButton>
-          <IconButton color="error" onClick={() => handleEliminar(params.row.id)}>
-            <DeleteIcon />
-          </IconButton>
-        </Stack>
-      ),
-    },
-  ];
+  const crearFactura = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/facturas",
+        nuevaFactura
+      );
+      setFacturas([...facturas, response.data]);
+      setNuevaFactura({ cliente: "", nit: "", fecha: "", total: "" });
+      alert("Factura creada exitosamente");
+    } catch (error) {
+      console.error("Error al crear factura:", error);
+      alert("Error al crear factura");
+    }
+  };
+
+  const iniciarEdicion = (id) => {
+    setEditando(id);
+  };
+
+  const cancelarEdicion = () => {
+    setEditando(null);
+    obtenerFacturas();
+  };
+
+  const actualizarFactura = async (id) => {
+    try {
+      const facturaEditada = facturas.find((factura) => factura.id === id);
+      await axios.put(
+        `http://localhost:5000/api/facturas/${id}`,
+        facturaEditada
+      );
+      setEditando(null);
+      obtenerFacturas();
+      alert("Factura actualizada exitosamente");
+    } catch (error) {
+      console.error("Error al actualizar factura:", error);
+      alert("Error al actualizar factura");
+    }
+  };
+
+  // FUNCIÓN CORREGIDA PARA ELIMINAR FACTURAS
+  const eliminarFactura = async (id) => {
+    if (!window.confirm("¿Estás seguro que deseas eliminar esta factura?")) {
+      return;
+    }
+
+    try {
+      await axios.delete(`http://localhost:5000/api/facturas/${id}`);
+      setFacturas(facturas.filter(factura => factura.id !== id));
+      alert("Factura eliminada exitosamente");
+    } catch (error) {
+      console.error("Error al eliminar factura:", error);
+      
+      if (error.response) {
+        if (error.response.status === 404) {
+          alert("La factura no fue encontrada (posiblemente ya fue eliminada)");
+        } else {
+          alert(`Error al eliminar: ${error.response.data?.error || error.message}`);
+        }
+      } else {
+        alert("Error de conexión al intentar eliminar la factura");
+      }
+      
+      obtenerFacturas();
+    }
+  };
 
   return (
-    <Box m="20px">
-      <Header title="FACTURAS" subtitle="Gestión de facturación" />
-      <Box display="flex" justifyContent="flex-end" mb={2}>
-        <Button
-          variant="contained"
-          color="secondary"
-          startIcon={<AddIcon />}
-          onClick={handleCrearFactura}
-        >
-          Crear Factura
-        </Button>
-      </Box>
-
-      <Box sx={{ width: "100%", overflowX: "auto" }}>
-        <Box
-          sx={{
-            minWidth: "1200px",
-            height: "75vh",
-            "& .MuiDataGrid-root": {
-              border: "none",
-            },
-            "& .MuiDataGrid-cell": {
-              border: "none",
-            },
-            "& .MuiDataGrid-columnHeaders": {
-              backgroundColor: colors.blueAccent[700],
-              borderBottom: "none",
-            },
-            "& .MuiDataGrid-virtualScroller": {
-              backgroundColor: colors.primary[400],
-            },
-            "& .MuiDataGrid-footerContainer": {
-              borderTop: "none",
-              backgroundColor: colors.blueAccent[700],
-            },
-            "& .MuiCheckbox-root": {
-              color: `${colors.greenAccent[200]} !important`,
-            },
-            "& .MuiDataGrid-iconSeparator": {
-              color: colors.primary[100],
-            },
+    <div style={{ padding: "20px" }}>
+      <h1 style={{ fontSize: "24px", marginBottom: "20px" }}>Facturas</h1>
+      
+      <form onSubmit={crearFactura} style={{ marginBottom: "20px" }}>
+        <input
+          type="text"
+          name="cliente"
+          value={nuevaFactura.cliente}
+          onChange={handleInputChange}
+          placeholder="Cliente"
+          required
+          style={{ marginRight: "10px", padding: "5px" }}
+        />
+        <input
+          type="text"
+          name="nit"
+          value={nuevaFactura.nit}
+          onChange={handleInputChange}
+          placeholder="NIT"
+          required
+          style={{ marginRight: "10px", padding: "5px" }}
+        />
+        <input
+          type="date"
+          name="fecha"
+          value={nuevaFactura.fecha}
+          onChange={handleInputChange}
+          placeholder="Fecha"
+          required
+          style={{ marginRight: "10px", padding: "5px" }}
+        />
+        <input
+          type="number"
+          name="total"
+          value={nuevaFactura.total}
+          onChange={handleInputChange}
+          placeholder="Total"
+          step="0.01"
+          required
+          style={{ marginRight: "10px", padding: "5px" }}
+        />
+        <button 
+          type="submit"
+          style={{ 
+            padding: "5px 10px", 
+            backgroundColor: "#4CAF50", 
+            color: "white", 
+            border: "none", 
+            borderRadius: "4px", 
+            cursor: "pointer" 
           }}
         >
-          <DataGrid
-            rows={facturas}
-            columns={columns}
-            checkboxSelection
-            pageSize={10}
-            autoHeight={false}
-          />
-        </Box>
-      </Box>
-    </Box>
+          Crear Factura
+        </button>
+      </form>
+
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr style={{ backgroundColor: "#f2f2f2" }}>
+            <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #ddd" }}>ID</th>
+            <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #ddd" }}>Cliente</th>
+            <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #ddd" }}>NIT</th>
+            <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #ddd" }}>Fecha</th>
+            <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #ddd" }}>Total</th>
+            <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #ddd" }}>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {facturas.map((factura) => (
+            <tr key={factura.id} style={{ borderBottom: "1px solid #ddd" }}>
+              <td style={{ padding: "10px" }}>{factura.id}</td>
+              <td style={{ padding: "10px" }}>
+                {editando === factura.id ? (
+                  <input
+                    type="text"
+                    name="cliente"
+                    value={factura.cliente}
+                    onChange={handleInputChange}
+                    style={{ width: "100%", padding: "5px" }}
+                    required
+                  />
+                ) : (
+                  factura.cliente
+                )}
+              </td>
+              <td style={{ padding: "10px" }}>
+                {editando === factura.id ? (
+                  <input
+                    type="text"
+                    name="nit"
+                    value={factura.nit}
+                    onChange={handleInputChange}
+                    style={{ width: "100%", padding: "5px" }}
+                    required
+                  />
+                ) : (
+                  factura.nit
+                )}
+              </td>
+              <td style={{ padding: "10px" }}>
+                {editando === factura.id ? (
+                  <input
+                    type="date"
+                    name="fecha"
+                    value={factura.fecha}
+                    onChange={handleInputChange}
+                    style={{ width: "100%", padding: "5px" }}
+                    required
+                  />
+                ) : (
+                  factura.fecha
+                )}
+              </td>
+              <td style={{ padding: "10px" }}>
+                {editando === factura.id ? (
+                  <input
+                    type="number"
+                    name="total"
+                    value={factura.total}
+                    onChange={handleInputChange}
+                    style={{ width: "100%", padding: "5px" }}
+                    step="0.01"
+                    required
+                  />
+                ) : (
+                  `$${parseFloat(factura.total).toFixed(2)}`
+                )}
+              </td>
+              <td style={{ padding: "10px" }}>
+                {editando === factura.id ? (
+                  <>
+                    <button 
+                      onClick={() => actualizarFactura(factura.id)}
+                      style={{
+                        marginRight: "5px",
+                        padding: "5px 10px",
+                        backgroundColor: "#4CAF50",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Guardar
+                    </button>
+                    <button 
+                      onClick={cancelarEdicion}
+                      style={{
+                        padding: "5px 10px",
+                        backgroundColor: "#f44336",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button 
+                      onClick={() => iniciarEdicion(factura.id)}
+                      style={{
+                        marginRight: "5px",
+                        padding: "5px 10px",
+                        backgroundColor: "#2196F3",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Editar
+                    </button>
+                    <button 
+                      onClick={() => eliminarFactura(factura.id)}
+                      style={{
+                        padding: "5px 10px",
+                        backgroundColor: "#f44336",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Eliminar
+                    </button>
+                  </>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 };
 
