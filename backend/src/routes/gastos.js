@@ -1,9 +1,10 @@
+// routes/gastos.js
 const express = require("express");
 const router = express.Router();
 const pool = require("../config/database");
 
-router.get("/", async (_, res) => {
-  const result = await pool.query("SELECT * FROM gastos ORDER BY id DESC");
+router.get("/", async (req, res) => {
+  const result = await pool.query("SELECT * FROM gastos ORDER BY id ASC");
   res.json(result.rows);
 });
 
