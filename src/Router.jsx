@@ -5,6 +5,7 @@ import {
   Dashboard,
   Team,
   Invoices,
+  Projects,
   Contacts,
   Form,
   Bar,
@@ -14,7 +15,7 @@ import {
   Geography,
   Calendar,
   Stream,
-} from "./scenes";
+  } from "./scenes";
 
 const AppRouter = () => {
   return (
@@ -25,6 +26,7 @@ const AppRouter = () => {
           <Route path="/team" element={<Team />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/invoices" element={<Invoices />} />
+          <Route path="/projects" element={<Projects />} />
           <Route path="/form" element={<Form />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/bar" element={<Bar />} />

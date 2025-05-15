@@ -4,6 +4,7 @@ import Dashboard from "./dashboard";
 import Team from "./team";
 import Invoices from "./invoices";
 import Contacts from "./contacts";
+import Projects from "./projects";
 import Form from "./form";
 import Calendar from "./calendar";
 import Bar from "./bar";
@@ -20,6 +21,7 @@ export {
   Team,
   Invoices,
   Contacts,
+  Projects,
   Form,
   Calendar,
   Bar,

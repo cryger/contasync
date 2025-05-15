@@ -53,8 +53,8 @@ const Contacts = () => {
   return (
     <Box m="20px">
       <Header
-        title="CLIENTES"
-        subtitle="Lista de clientes"
+        title="PROYECTOS"
+        subtitle="Lista de proyectos"
       />
       <Box
         mt="40px"

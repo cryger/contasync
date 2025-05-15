@@ -2,302 +2,207 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 
 const Invoices = () => {
-  const [facturas, setFacturas] = useState([]);
-  const [editando, setEditando] = useState(null);
-  const [nuevaFactura, setNuevaFactura] = useState({
-    cliente: "",
-    nit: "",
-    fecha: "",
-    total: "",
+  const [recibos, setRecibos] = useState([]);
+  const [ingresos, setIngresos] = useState([]);
+  const [gastos, setGastos] = useState([]);
+  const [nuevoIngreso, setNuevoIngreso] = useState({
+    valor_recibido: "",
+    saldo_anterior: "",
+    saldo_en_caja: "",
+    total_ingresos: ""
   });
+  const [nuevoGasto, setNuevoGasto] = useState({
+    descripcion: "",
+    monto: "",
+    categoria: "",
+    metodo_pago: "Efectivo"
+  });
+  const [nuevoRecibo, setNuevoRecibo] = useState({
+    ingreso_id: "",
+    gasto_id: "",
+    fecha: "",
+    monto: ""
+  });
+  const [editando, setEditando] = useState(null);
 
   useEffect(() => {
-    obtenerFacturas();
+    obtenerRecibos();
+    obtenerIngresos();
+    obtenerGastos();
   }, []);
 
-  const obtenerFacturas = async () => {
+  const formatCurrency = (value) => {
+    const number = parseFloat(value.toString().replace(/[^\d]/g, ""));
+    return isNaN(number)
+      ? ""
+      : number.toLocaleString("es-CO", {
+          style: "currency",
+          currency: "COP",
+          minimumFractionDigits: 0
+        });
+  };
+
+  const obtenerRecibos = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/facturas");
-      setFacturas(response.data);
+      const { data } = await axios.get("http://localhost:5000/api/recibos");
+      setRecibos(data);
     } catch (error) {
-      console.error("Error al obtener facturas:", error);
-      alert("Error al cargar facturas");
+      console.error("Error al obtener recibos:", error);
     }
   };
 
-  const handleInputChange = (e) => {
+  const obtenerIngresos = async () => {
+    try {
+      const { data } = await axios.get("http://localhost:5000/api/ingresos");
+      setIngresos(data);
+    } catch (error) {
+      console.error("Error al obtener ingresos:", error);
+    }
+  };
+
+  const obtenerGastos = async () => {
+    try {
+      const { data } = await axios.get("http://localhost:5000/api/gastos");
+      setGastos(data);
+    } catch (error) {
+      console.error("Error al obtener gastos:", error);
+    }
+  };
+
+  const handleChangeIngreso = (e) => {
+    const { name, value } = e.target;
+    setNuevoIngreso({ ...nuevoIngreso, [name]: value });
+  };
+
+  const handleChangeGasto = (e) => {
+    const { name, value } = e.target;
+    setNuevoGasto({ ...nuevoGasto, [name]: value });
+  };
+
+  const handleChangeRecibo = (e) => {
     const { name, value } = e.target;
     if (editando) {
-      setFacturas(
-        facturas.map((factura) =>
-          factura.id === editando ? { ...factura, [name]: value } : factura
-        )
+      setRecibos((prev) =>
+        prev.map((r) => (r.id === editando ? { ...r, [name]: value } : r))
       );
     } else {
-      setNuevaFactura({ ...nuevaFactura, [name]: value });
+      setNuevoRecibo({ ...nuevoRecibo, [name]: value });
     }
   };
 
-  const crearFactura = async (e) => {
+  const crearIngreso = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/facturas",
-        nuevaFactura
+      const parsedIngreso = Object.fromEntries(
+        Object.entries(nuevoIngreso).map(([k, v]) => [k, parseFloat(v.toString().replace(/[^\d]/g, ""))])
       );
-      setFacturas([...facturas, response.data]);
-      setNuevaFactura({ cliente: "", nit: "", fecha: "", total: "" });
-      alert("Factura creada exitosamente");
+      const { data } = await axios.post("http://localhost:5000/api/ingresos", parsedIngreso);
+      setIngresos([...ingresos, data]);
+      setNuevoIngreso({ valor_recibido: "", saldo_anterior: "", saldo_en_caja: "", total_ingresos: "" });
     } catch (error) {
-      console.error("Error al crear factura:", error);
-      alert("Error al crear factura");
+      alert("Error al crear ingreso");
     }
   };
 
-  const iniciarEdicion = (id) => {
-    setEditando(id);
-  };
-
-  const cancelarEdicion = () => {
-    setEditando(null);
-    obtenerFacturas();
-  };
-
-  const actualizarFactura = async (id) => {
+  const crearGasto = async (e) => {
+    e.preventDefault();
     try {
-      const facturaEditada = facturas.find((factura) => factura.id === id);
-      await axios.put(
-        `http://localhost:5000/api/facturas/${id}`,
-        facturaEditada
-      );
-      setEditando(null);
-      obtenerFacturas();
-      alert("Factura actualizada exitosamente");
+      const parsedGasto = {
+        ...nuevoGasto,
+        monto: parseFloat(nuevoGasto.monto.toString().replace(/[^\d]/g, ""))
+      };
+      const { data } = await axios.post("http://localhost:5000/api/gastos", parsedGasto);
+      setGastos([...gastos, data]);
+      setNuevoGasto({ descripcion: "", monto: "", categoria: "", metodo_pago: "Efectivo" });
     } catch (error) {
-      console.error("Error al actualizar factura:", error);
-      alert("Error al actualizar factura");
+      alert("Error al crear gasto");
     }
   };
 
-  // FUNCIÓN CORREGIDA PARA ELIMINAR FACTURAS
-  const eliminarFactura = async (id) => {
-    if (!window.confirm("¿Estás seguro que deseas eliminar esta factura?")) {
-      return;
-    }
-
+  const crearRecibo = async (e) => {
+    e.preventDefault();
     try {
-      await axios.delete(`http://localhost:5000/api/facturas/${id}`);
-      setFacturas(facturas.filter(factura => factura.id !== id));
-      alert("Factura eliminada exitosamente");
+      const parsedRecibo = {
+        ...nuevoRecibo,
+        monto: parseFloat(nuevoRecibo.monto.toString().replace(/[^\d]/g, ""))
+      };
+      const { data } = await axios.post("http://localhost:5000/api/recibos", parsedRecibo);
+      setRecibos([...recibos, data]);
+      setNuevoRecibo({ ingreso_id: "", gasto_id: "", fecha: "", monto: "" });
     } catch (error) {
-      console.error("Error al eliminar factura:", error);
-      
-      if (error.response) {
-        if (error.response.status === 404) {
-          alert("La factura no fue encontrada (posiblemente ya fue eliminada)");
-        } else {
-          alert(`Error al eliminar: ${error.response.data?.error || error.message}`);
-        }
-      } else {
-        alert("Error de conexión al intentar eliminar la factura");
-      }
-      
-      obtenerFacturas();
+      alert("Error al crear recibo");
     }
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1 style={{ fontSize: "24px", marginBottom: "20px" }}>Facturas</h1>
-      
-      <form onSubmit={crearFactura} style={{ marginBottom: "20px" }}>
-        <input
-          type="text"
-          name="cliente"
-          value={nuevaFactura.cliente}
-          onChange={handleInputChange}
-          placeholder="Cliente"
-          required
-          style={{ marginRight: "10px", padding: "5px" }}
-        />
-        <input
-          type="text"
-          name="nit"
-          value={nuevaFactura.nit}
-          onChange={handleInputChange}
-          placeholder="NIT"
-          required
-          style={{ marginRight: "10px", padding: "5px" }}
-        />
-        <input
-          type="date"
-          name="fecha"
-          value={nuevaFactura.fecha}
-          onChange={handleInputChange}
-          placeholder="Fecha"
-          required
-          style={{ marginRight: "10px", padding: "5px" }}
-        />
-        <input
-          type="number"
-          name="total"
-          value={nuevaFactura.total}
-          onChange={handleInputChange}
-          placeholder="Total"
-          step="0.01"
-          required
-          style={{ marginRight: "10px", padding: "5px" }}
-        />
-        <button 
-          type="submit"
-          style={{ 
-            padding: "5px 10px", 
-            backgroundColor: "#4CAF50", 
-            color: "white", 
-            border: "none", 
-            borderRadius: "4px", 
-            cursor: "pointer" 
-          }}
-        >
-          Crear Factura
-        </button>
+    <div style={{ padding: 20 }}>
+      <h2>Registrar Ingreso</h2>
+      <form onSubmit={crearIngreso}>
+        {Object.keys(nuevoIngreso).map((key) => (
+          <input
+            key={key}
+            name={key}
+            placeholder={key.replace("_", " ")}
+            value={formatCurrency(nuevoIngreso[key])}
+            onChange={handleChangeIngreso}
+            required
+          />
+        ))}
+        <button type="submit">Agregar Ingreso</button>
       </form>
 
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <h2>Registrar Gasto</h2>
+      <form onSubmit={crearGasto}>
+        <input name="descripcion" placeholder="Descripción" value={nuevoGasto.descripcion} onChange={handleChangeGasto} required />
+        <input name="monto" placeholder="Monto" value={formatCurrency(nuevoGasto.monto)} onChange={handleChangeGasto} required />
+        <input name="categoria" placeholder="Categoría" value={nuevoGasto.categoria} onChange={handleChangeGasto} required />
+        <select name="metodo_pago" value={nuevoGasto.metodo_pago} onChange={handleChangeGasto}>
+          <option value="Efectivo">Efectivo</option>
+          <option value="Transferencia">Transferencia</option>
+          <option value="Tarjeta">Tarjeta</option>
+          <option value="Cheque">Cheque</option>
+        </select>
+        <button type="submit">Agregar Gasto</button>
+      </form>
+
+      <h2>Crear Recibo</h2>
+      <form onSubmit={crearRecibo}>
+        <select name="ingreso_id" value={nuevoRecibo.ingreso_id} onChange={handleChangeRecibo} required>
+          <option value="">Seleccionar ingreso</option>
+          {ingresos.map((i) => (
+            <option key={i.id} value={i.id}>Ingreso #{i.id} - {formatCurrency(i.valor_recibido)}</option>
+          ))}
+        </select>
+        <select name="gasto_id" value={nuevoRecibo.gasto_id} onChange={handleChangeRecibo} required>
+          <option value="">Seleccionar gasto</option>
+          {gastos.map((g) => (
+            <option key={g.id} value={g.id}>Gasto #{g.id} - {g.descripcion}</option>
+          ))}
+        </select>
+        <input type="date" name="fecha" value={nuevoRecibo.fecha} onChange={handleChangeRecibo} required />
+        <input name="monto" value={formatCurrency(nuevoRecibo.monto)} onChange={handleChangeRecibo} placeholder="Monto del recibo" required />
+        <button type="submit">Crear Recibo</button>
+      </form>
+
+      <h2>Lista de Recibos</h2>
+      <table>
         <thead>
-          <tr style={{ backgroundColor: "#f2f2f2" }}>
-            <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #ddd" }}>ID</th>
-            <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #ddd" }}>Cliente</th>
-            <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #ddd" }}>NIT</th>
-            <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #ddd" }}>Fecha</th>
-            <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #ddd" }}>Total</th>
-            <th style={{ padding: "10px", textAlign: "left", borderBottom: "1px solid #ddd" }}>Acciones</th>
+          <tr>
+            <th>ID</th>
+            <th>Ingreso</th>
+            <th>Gasto</th>
+            <th>Fecha</th>
+            <th>Monto</th>
           </tr>
         </thead>
         <tbody>
-          {facturas.map((factura) => (
-            <tr key={factura.id} style={{ borderBottom: "1px solid #ddd" }}>
-              <td style={{ padding: "10px" }}>{factura.id}</td>
-              <td style={{ padding: "10px" }}>
-                {editando === factura.id ? (
-                  <input
-                    type="text"
-                    name="cliente"
-                    value={factura.cliente}
-                    onChange={handleInputChange}
-                    style={{ width: "100%", padding: "5px" }}
-                    required
-                  />
-                ) : (
-                  factura.cliente
-                )}
-              </td>
-              <td style={{ padding: "10px" }}>
-                {editando === factura.id ? (
-                  <input
-                    type="text"
-                    name="nit"
-                    value={factura.nit}
-                    onChange={handleInputChange}
-                    style={{ width: "100%", padding: "5px" }}
-                    required
-                  />
-                ) : (
-                  factura.nit
-                )}
-              </td>
-              <td style={{ padding: "10px" }}>
-                {editando === factura.id ? (
-                  <input
-                    type="date"
-                    name="fecha"
-                    value={factura.fecha}
-                    onChange={handleInputChange}
-                    style={{ width: "100%", padding: "5px" }}
-                    required
-                  />
-                ) : (
-                  factura.fecha
-                )}
-              </td>
-              <td style={{ padding: "10px" }}>
-                {editando === factura.id ? (
-                  <input
-                    type="number"
-                    name="total"
-                    value={factura.total}
-                    onChange={handleInputChange}
-                    style={{ width: "100%", padding: "5px" }}
-                    step="0.01"
-                    required
-                  />
-                ) : (
-                  `$${parseFloat(factura.total).toFixed(2)}`
-                )}
-              </td>
-              <td style={{ padding: "10px" }}>
-                {editando === factura.id ? (
-                  <>
-                    <button 
-                      onClick={() => actualizarFactura(factura.id)}
-                      style={{
-                        marginRight: "5px",
-                        padding: "5px 10px",
-                        backgroundColor: "#4CAF50",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer"
-                      }}
-                    >
-                      Guardar
-                    </button>
-                    <button 
-                      onClick={cancelarEdicion}
-                      style={{
-                        padding: "5px 10px",
-                        backgroundColor: "#f44336",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer"
-                      }}
-                    >
-                      Cancelar
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button 
-                      onClick={() => iniciarEdicion(factura.id)}
-                      style={{
-                        marginRight: "5px",
-                        padding: "5px 10px",
-                        backgroundColor: "#2196F3",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer"
-                      }}
-                    >
-                      Editar
-                    </button>
-                    <button 
-                      onClick={() => eliminarFactura(factura.id)}
-                      style={{
-                        padding: "5px 10px",
-                        backgroundColor: "#f44336",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer"
-                      }}
-                    >
-                      Eliminar
-                    </button>
-                  </>
-                )}
-              </td>
+          {recibos.map((r) => (
+            <tr key={r.id}>
+              <td>{r.id}</td>
+              <td>{r.ingreso_id}</td>
+              <td>{r.gasto_id}</td>
+              <td>{r.fecha}</td>
+              <td>{formatCurrency(r.monto)}</td>
             </tr>
           ))}
         </tbody>

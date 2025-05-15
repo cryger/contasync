@@ -2,7 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
-const facturaRoutes = require("./routes/facturaRoutes");
+const ingresosRoutes = require("./routes/ingresos");
+const gastosRoutes = require("./routes/gastos");
+const recibosRoutes = require("./routes/recibos");
 const app = express();
 
 // Configuración básica de middleware
@@ -17,8 +19,9 @@ app.use(express.urlencoded({ extended: true })); // Para parsear application/x-w
 
 // Rutas
 app.use('/api', userRoutes); // Esto hará que todas las rutas empiecen con /api
-app.use("/api/facturas", facturaRoutes);
-
+app.use("/api/ingresos", ingresosRoutes);
+app.use("/api/gastos", gastosRoutes);
+app.use("/api/recibos", recibosRoutes);
 
 // Manejador de rutas no encontradas
 app.use((req, res) => {

@@ -4,7 +4,9 @@ import { useContext, useState } from "react";
 import { tokens } from "../../../theme";
 import { Menu, MenuItem, Sidebar } from "react-pro-sidebar";
 import {
+  ArrowBackIosNewOutlined,
   BarChartOutlined,
+  BookOutlined,
   CalendarTodayOutlined,
   ContactsOutlined,
   DashboardOutlined,
@@ -166,10 +168,17 @@ const SideBar = () => {
             icon={<ContactsOutlined />}
           />
           <Item
-            title="Facturas"
+            title="Recibos"
             path="/invoices"
             colors={colors}
             icon={<ReceiptOutlined />}
+          />
+                      
+          <Item
+            title="Proyectos"
+            path="/projects"
+            colors={colors}
+            icon={<BookOutlined />}
           />
         </Menu>
         <Typography
