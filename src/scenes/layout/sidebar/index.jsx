@@ -1,5 +1,11 @@
 /* eslint-disable react/prop-types */
-import { Avatar, Box, IconButton, Typography, useTheme } from "@mui/material";
+import {
+  Avatar,
+  Box,
+  IconButton,
+  Typography,
+  useTheme,
+} from "@mui/material";
 import { useContext, useState } from "react";
 import { tokens } from "../../../theme";
 import { Menu, MenuItem, Sidebar } from "react-pro-sidebar";
@@ -7,6 +13,7 @@ import {
   ArrowBackIosNewOutlined,
   BarChartOutlined,
   BookOutlined,
+  BuildOutlined,
   CalendarTodayOutlined,
   ContactsOutlined,
   DashboardOutlined,
@@ -30,6 +37,7 @@ const SideBar = () => {
   const { toggled, setToggled } = useContext(ToggledContext);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
   return (
     <Sidebar
       backgroundColor={colors.primary[400]}
@@ -88,6 +96,7 @@ const SideBar = () => {
           </Box>
         </MenuItem>
       </Menu>
+
       {!collapsed && (
         <Box
           sx={{
@@ -137,13 +146,15 @@ const SideBar = () => {
             icon={<DashboardOutlined />}
           />
         </Menu>
+
         <Typography
           variant="h6"
           color={colors.gray[300]}
           sx={{ m: "15px 0 5px 20px" }}
         >
           {!collapsed ? "Data" : " "}
-        </Typography>{" "}
+        </Typography>
+
         <Menu
           menuItemStyles={{
             button: {
@@ -173,14 +184,20 @@ const SideBar = () => {
             colors={colors}
             icon={<ReceiptOutlined />}
           />
-                      
           <Item
             title="Proyectos"
             path="/projects"
             colors={colors}
             icon={<BookOutlined />}
           />
+          <Item
+            title="Proveedores"
+            path="/suppliers"
+            colors={colors}
+            icon={<BuildOutlined />}
+          />
         </Menu>
+
         <Typography
           variant="h6"
           color={colors.gray[300]}
@@ -188,6 +205,7 @@ const SideBar = () => {
         >
           {!collapsed ? "Pages" : " "}
         </Typography>
+
         <Menu
           menuItemStyles={{
             button: {
@@ -218,6 +236,7 @@ const SideBar = () => {
             icon={<HelpOutlineOutlined />}
           />
         </Menu>
+
         <Typography
           variant="h6"
           color={colors.gray[300]}
@@ -225,6 +244,7 @@ const SideBar = () => {
         >
           {!collapsed ? "Charts" : " "}
         </Typography>
+
         <Menu
           menuItemStyles={{
             button: {

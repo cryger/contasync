@@ -5,6 +5,7 @@ import Team from "./team";
 import Invoices from "./invoices";
 import Contacts from "./contacts";
 import Projects from "./projects";
+import Suppliers from "./suppliers";
 import Form from "./form";
 import Calendar from "./calendar";
 import Bar from "./bar";
@@ -22,6 +23,7 @@ export {
   Invoices,
   Contacts,
   Projects,
+  Suppliers,
   Form,
   Calendar,
   Bar,
