@@ -8,6 +8,7 @@ const recibosRoutes = require("./routes/recibos");
 const proyectosRoutes = require("./routes/proyectos");
 const clientesRouter = require("./routes/clientes");
 const suppliersRoutes = require("./routes/suppliers");
+const inversionesRoutes = require("./routes/inversiones.routes");
 const app = express();
 
 // Configuración básica de middleware
@@ -16,6 +17,8 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+
 
 app.use(express.json()); // Para parsear application/json
 app.use(express.urlencoded({ extended: true })); // Para parsear application/x-www-form-urlencoded
@@ -28,6 +31,7 @@ app.use("/api/recibos", recibosRoutes);
 app.use("/api/proyectos", proyectosRoutes);
 app.use("/api/clientes", clientesRouter); 
 app.use("/api/proveedores", suppliersRoutes);
+app.use("/api/inversiones", inversionesRoutes);
 
 
 // Manejador de rutas no encontradas
