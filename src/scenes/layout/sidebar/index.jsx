@@ -28,6 +28,7 @@ import {
   WavesOutlined,
   MonetizationOnOutlined,
   AccountBalance,
+  
 } from "@mui/icons-material";
 import avatar from "../../../assets/images/avatar.png";
 import logo from "../../../assets/images/logo.png";
@@ -174,6 +175,14 @@ const SideBar = () => {
             colors={colors}
             icon={<PeopleAltOutlined />}
           />
+
+          <Item
+            title="Empleados"
+            path="/employees"
+            colors={colors}
+            icon={<PeopleAltOutlined/>}
+          />
+
           <Item
             title="Clientes"
             path="/contacts"

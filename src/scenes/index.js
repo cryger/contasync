@@ -8,6 +8,7 @@ import Projects from "./projects";
 import Suppliers from "./suppliers";
 import Investments from "./investments";
 import Banks from "./banks";
+import Employees from "./employees";
 import Form from "./form";
 import Calendar from "./calendar";
 import Bar from "./bar";
@@ -28,6 +29,7 @@ export {
   Suppliers,
   Investments,
   Banks,
+  Employees,
   Form,
   Calendar,
   Bar,
