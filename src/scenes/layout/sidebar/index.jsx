@@ -27,6 +27,7 @@ import {
   TimelineOutlined,
   WavesOutlined,
   MonetizationOnOutlined,
+  AccountBalance,
 } from "@mui/icons-material";
 import avatar from "../../../assets/images/avatar.png";
 import logo from "../../../assets/images/logo.png";
@@ -203,6 +204,13 @@ const SideBar = () => {
             path="/investments"
             colors={colors}
             icon={<MonetizationOnOutlined />}
+          />
+
+           <Item
+            title="Bancos"
+            path="/banks"
+            colors={colors}
+            icon={<AccountBalance/>}
           />
         </Menu>
 

@@ -9,6 +9,7 @@ import {
   Contacts,
   Suppliers,
   Investments,
+  Banks,
   Form,
   Bar,
   Line,
@@ -31,6 +32,7 @@ const AppRouter = () => {
           <Route path="/projects" element={<Projects />} />
           <Route path="/suppliers" element={<Suppliers />} />
           <Route path="/investments" element={<Investments />} />
+          <Route path="/banks" element={<Banks/>} />
           <Route path="/form" element={<Form />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/bar" element={<Bar />} />
