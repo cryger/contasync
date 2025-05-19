@@ -33,6 +33,7 @@
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "express": "^5.1.0",
+    "express-validator": "^7.2.1",
     "formik": "^2.4.5",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.1",

@@ -11,6 +11,7 @@ import {
   Investments,
   Banks,
   Employees,
+  Cuenta,
   Form,
   Bar,
   Line,
@@ -35,6 +36,7 @@ const AppRouter = () => {
           <Route path="/investments" element={<Investments />} />
           <Route path="/banks" element={<Banks/>} />
           <Route path="/employees" element={<Employees/>} />
+          <Route path="/cuenta" element={<Cuenta/>} />
           <Route path="/form" element={<Form />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/bar" element={<Bar />} />
