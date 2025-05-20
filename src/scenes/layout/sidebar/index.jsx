@@ -29,8 +29,9 @@ import {
   MonetizationOnOutlined,
   AccountBalance,
   AccountBalanceWalletOutlined,
-  BusinessCenterOutlined
-  
+  BusinessCenterOutlined,
+  RequestQuoteOutlined,
+
 } from "@mui/icons-material";
 import avatar from "../../../assets/images/avatar.png";
 import logo from "../../../assets/images/logo.png";
@@ -225,7 +226,7 @@ const SideBar = () => {
           />
 
           <Item
-            title="Cuentas"
+            title="Cuentas Bancarias"
             path="/cuenta"
             colors={colors}
             icon={<AccountBalanceWalletOutlined />}
@@ -236,6 +237,13 @@ const SideBar = () => {
             path="/costcenter"
             colors={colors}
             icon={<BusinessCenterOutlined />}
+          />
+
+          <Item
+            title="Presupuestos"
+            path="/budget"
+            colors={colors}
+            icon={<RequestQuoteOutlined />}
           />
         </Menu>
 

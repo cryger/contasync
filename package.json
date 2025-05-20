@@ -40,6 +40,7 @@
     "jspdf-autotable": "^5.0.2",
     "pg": "^8.15.6",
     "react": "^18.2.0",
+    "react-datepicker": "^8.3.0",
     "react-dom": "^18.2.0",
     "react-pro-sidebar": "^1.1.0",
     "react-router-dom": "^6.22.1",
