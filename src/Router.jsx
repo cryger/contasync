@@ -12,6 +12,7 @@ import {
   Banks,
   Employees,
   Cuenta,
+  Costcenter,
   Form,
   Bar,
   Line,
@@ -20,6 +21,7 @@ import {
   Geography,
   Calendar,
   Stream,
+ 
   } from "./scenes";
 
 const AppRouter = () => {
@@ -37,6 +39,7 @@ const AppRouter = () => {
           <Route path="/banks" element={<Banks/>} />
           <Route path="/employees" element={<Employees/>} />
           <Route path="/cuenta" element={<Cuenta/>} />
+          <Route path="/costcenter" element={<Costcenter/>} />
           <Route path="/form" element={<Form />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/bar" element={<Bar />} />
