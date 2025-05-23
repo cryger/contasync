@@ -40,7 +40,6 @@ const Projects = () => {
     const { name, value } = e.target;
 
     if (name === "presupuesto") {
-      // Guardar solo números limpios para presupuesto
       const numeroLimpio = value.replace(/[^\d]/g, "");
       setNuevoProyecto({ ...nuevoProyecto, [name]: numeroLimpio });
     } else {
@@ -69,15 +68,12 @@ const Projects = () => {
 
     try {
       if (editandoId) {
-        // Actualizar proyecto existente
         await axios.put(`http://localhost:5000/api/proyectos/${editandoId}`, proyectoData);
         obtenerProyectos();
       } else {
-        // Crear nuevo proyecto
         const { data } = await axios.post("http://localhost:5000/api/proyectos", proyectoData);
         setProyectos([...proyectos, data]);
       }
-
       limpiarFormulario();
     } catch (error) {
       console.error("Error al guardar proyecto:", error);
@@ -179,7 +175,11 @@ const Projects = () => {
           style={{
             gridColumn: "span 2",
             padding: "8px",
-            fontWeight: "bold"
+            fontWeight: "bold",
+            backgroundColor: "#000000",
+            color: "white",
+            border: "none",
+            cursor: "pointer"
           }}
         >
           {editandoId ? "Actualizar Proyecto" : "Agregar Proyecto"}
@@ -196,30 +196,49 @@ const Projects = () => {
         }}
       >
         <thead>
-          <tr style={{ backgroundColor: "#2c2c2e" }}>
-            <th style={{ padding: "8px" }}>ID</th>
-            <th style={{ padding: "8px" }}>Nombre</th>
-            <th style={{ padding: "8px" }}>Descripción</th>
-            <th style={{ padding: "8px" }}>Presupuesto</th>
-            <th style={{ padding: "8px" }}>Fecha Inicio</th>
-            <th style={{ padding: "8px" }}>Fecha Fin</th>
-            <th style={{ padding: "8px" }}>Acciones</th>
+          <tr style={{ backgroundColor: "#000000" }}>
+            <th style={{ padding: "8px", textAlign: "left" }}>ID</th>
+            <th style={{ padding: "8px", textAlign: "left" }}>Nombre</th>
+            <th style={{ padding: "8px", textAlign: "left" }}>Descripción</th>
+            <th style={{ padding: "8px", textAlign: "right" }}>Presupuesto</th>
+            <th style={{ padding: "8px", textAlign: "center" }}>Fecha Inicio</th>
+            <th style={{ padding: "8px", textAlign: "center" }}>Fecha Fin</th>
+            <th style={{ padding: "8px", textAlign: "center" }}>Acciones</th>
           </tr>
         </thead>
         <tbody>
           {proyectos.map((p) => (
             <tr key={p.id} style={{ borderTop: "1px solid #444" }}>
-              <td style={{ padding: "8px" }}>{p.id}</td>
-              <td style={{ padding: "8px" }}>{p.nombre}</td>
-              <td style={{ padding: "8px" }}>{p.descripcion}</td>
-              <td style={{ padding: "8px" }}>{formatCurrency(p.presupuesto)}</td>
-              <td style={{ padding: "8px" }}>{p.fecha_inicio ? p.fecha_inicio.split("T")[0] : ""}</td>
-              <td style={{ padding: "8px" }}>{p.fecha_fin ? p.fecha_fin.split("T")[0] : ""}</td>
-              <td style={{ padding: "8px" }}>
-                <button onClick={() => editarProyecto(p)} style={{ marginRight: "10px" }}>
+              <td style={{ padding: "8px", textAlign: "left" }}>{p.id}</td>
+              <td style={{ padding: "8px", textAlign: "left" }}>{p.nombre}</td>
+              <td style={{ padding: "8px", textAlign: "left" }}>{p.descripcion}</td>
+              <td style={{ padding: "8px", textAlign: "right" }}>{formatCurrency(p.presupuesto)}</td>
+              <td style={{ padding: "8px", textAlign: "center" }}>{p.fecha_inicio ? p.fecha_inicio.split("T")[0] : ""}</td>
+              <td style={{ padding: "8px", textAlign: "center" }}>{p.fecha_fin ? p.fecha_fin.split("T")[0] : ""}</td>
+              <td style={{ padding: "8px", textAlign: "center" }}>
+                <button
+                  onClick={() => editarProyecto(p)}
+                  style={{
+                    marginRight: "10px",
+                    backgroundColor: "#000000",
+                    color: "white",
+                    border: "none",
+                    cursor: "pointer"
+                  }}
+                >
                   ✏️
                 </button>
-                <button onClick={() => eliminarProyecto(p.id)}>🗑️</button>
+                <button
+                  onClick={() => eliminarProyecto(p.id)}
+                  style={{
+                    backgroundColor: "#000000",
+                    color: "white",
+                    border: "none",
+                    cursor: "pointer"
+                  }}
+                >
+                  🗑️
+                </button>
               </td>
             </tr>
           ))}

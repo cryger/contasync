@@ -559,32 +559,32 @@ const Invoices = () => {
         </form>
       </div>
 
-      {/* Tabla de Recibos */}
+       {/* Tabla de Recibos */}
       <div>
-        <h2>Lista de Recibos</h2>
+        <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Lista de Recibos</h2>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "600px" }}>
             <thead>
-              <tr style={{ backgroundColor: "#2c2c2e" }}>
-                <th>ID</th>
-                <th>Fecha</th>
-                <th>Ingreso</th>
-                <th>Gasto</th>
-                <th>Monto</th>
+              <tr style={{ backgroundColor: "#2c2c2e", color: "#fff", textAlign: "left" }}>
+                <th style={{ padding: "10px" }}>ID</th>
+                <th style={{ padding: "10px" }}>Fecha</th>
+                <th style={{ padding: "10px" }}>Ingreso</th>
+                <th style={{ padding: "10px" }}>Gasto</th>
+                <th style={{ padding: "10px", textAlign: "right" }}>Monto</th>
               </tr>
             </thead>
             <tbody>
-              {recibos.map(r => (
-                <tr key={r.id} style={{ borderBottom: "1px solid #444" }}>
-                  <td>{r.id}</td>
-                  <td>{formatDate(r.fecha)}</td>
-                  <td>
+              {recibos.map((r) => (
+                <tr key={r.id} style={{ borderBottom: "1px solid #ccc" }}>
+                  <td style={{ padding: "10px" }}>{r.id}</td>
+                  <td style={{ padding: "10px" }}>{formatDate(r.fecha)}</td>
+                  <td style={{ padding: "10px" }}>
                     {ingresos.find(i => i.id === r.ingreso_id)?.numero_recibo || `Ingreso ${r.ingreso_id}`}
                   </td>
-                  <td>
+                  <td style={{ padding: "10px" }}>
                     {gastos.find(g => g.id === r.gasto_id)?.descripcion || `Gasto ${r.gasto_id}`}
                   </td>
-                  <td>{formatCurrency(r.monto)}</td>
+                  <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(r.monto)}</td>
                 </tr>
               ))}
             </tbody>

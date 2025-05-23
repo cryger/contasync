@@ -83,17 +83,56 @@ const Suppliers = () => {
     }
   };
 
+  // Estilos para encabezados y celdas numéricas
+  const thStyle = {
+    padding: "12px 10px",
+    backgroundColor: "#1e1e2f",
+    color: "#f0f0f0",
+    borderBottom: "2px solid #444",
+    textAlign: "left",
+    fontWeight: "600",
+    letterSpacing: "0.05em",
+    textTransform: "uppercase",
+  };
+
+  const tdStyleTexto = {
+    padding: "10px",
+    borderBottom: "1px solid #333",
+    textAlign: "left",
+    fontSize: "0.9rem",
+    color: "#ddd"
+  };
+
+  const tdStyleNumero = {
+    padding: "10px",
+    borderBottom: "1px solid #333",
+    textAlign: "center",
+    fontSize: "0.9rem",
+    color: "#ddd",
+    minWidth: "80px",
+  };
+
+  const botonAccion = {
+    marginRight: "10px",
+    cursor: "pointer",
+    backgroundColor: "transparent",
+    border: "none",
+    fontSize: "1.1rem",
+    color: "#a0a0a0",
+    transition: "color 0.2s",
+  };
+
   return (
-    <div style={{ padding: "20px", color: "white" }}>
-      <h2>{editandoId ? "Editar Proveedor" : "Registrar Proveedor"}</h2>
+    <div style={{ padding: "20px", backgroundColor: "#121217", minHeight: "100vh", color: "white", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
+      <h2 style={{ marginBottom: "15px" }}>{editandoId ? "Editar Proveedor" : "Registrar Proveedor"}</h2>
 
       <form
         onSubmit={crearOActualizarProveedor}
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "10px",
-          marginBottom: "30px"
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "15px",
+          marginBottom: "40px"
         }}
       >
         <input
@@ -102,6 +141,7 @@ const Suppliers = () => {
           value={nuevoProveedor.nombre}
           onChange={handleChangeProveedor}
           required
+          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #444", backgroundColor: "#1c1c2e", color: "white" }}
         />
         <input
           name="identificacion"
@@ -109,12 +149,14 @@ const Suppliers = () => {
           value={nuevoProveedor.identificacion}
           onChange={handleChangeProveedor}
           required
+          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #444", backgroundColor: "#1c1c2e", color: "white" }}
         />
         <input
           name="telefono"
           placeholder="Teléfono"
           value={nuevoProveedor.telefono}
           onChange={handleChangeProveedor}
+          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #444", backgroundColor: "#1c1c2e", color: "white" }}
         />
         <input
           type="email"
@@ -122,48 +164,88 @@ const Suppliers = () => {
           placeholder="Correo electrónico"
           value={nuevoProveedor.email}
           onChange={handleChangeProveedor}
+          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #444", backgroundColor: "#1c1c2e", color: "white" }}
         />
         <textarea
           name="direccion"
           placeholder="Dirección"
           value={nuevoProveedor.direccion}
           onChange={handleChangeProveedor}
-          style={{ gridColumn: "span 2", resize: "vertical" }}
+          style={{ gridColumn: "span 2", resize: "vertical", padding: "8px", borderRadius: "4px", border: "1px solid #444", backgroundColor: "#1c1c2e", color: "white" }}
         />
-        <button type="submit" style={{ gridColumn: "span 2", padding: "8px", fontWeight: "bold" }}>
+        <button
+          type="submit"
+          style={{
+            gridColumn: "span 2",
+            padding: "12px",
+            fontWeight: "700",
+            borderRadius: "5px",
+            border: "none",
+            backgroundColor: "#4a90e2",
+            color: "white",
+            cursor: "pointer",
+            fontSize: "1rem",
+            transition: "background-color 0.3s"
+          }}
+          onMouseOver={e => (e.currentTarget.style.backgroundColor = "#357ABD")}
+          onMouseOut={e => (e.currentTarget.style.backgroundColor = "#4a90e2")}
+        >
           {editandoId ? "Actualizar Proveedor" : "Agregar Proveedor"}
         </button>
       </form>
 
-      <h2>Lista de Proveedores</h2>
+      <h2 style={{ marginBottom: "15px" }}>Lista de Proveedores</h2>
 
-      <table style={{ width: "100%", borderCollapse: "collapse", color: "white" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", backgroundColor: "#181824", borderRadius: "8px", overflow: "hidden" }}>
         <thead>
-          <tr style={{ backgroundColor: "#2c2c2e" }}>
-            <th style={{ padding: "8px" }}>ID</th>
-            <th style={{ padding: "8px" }}>Nombre</th>
-            <th style={{ padding: "8px" }}>Identificación</th>
-            <th style={{ padding: "8px" }}>Teléfono</th>
-            <th style={{ padding: "8px" }}>Email</th>
-            <th style={{ padding: "8px" }}>Dirección</th>
-            <th style={{ padding: "8px" }}>Acciones</th>
+          <tr>
+            <th style={{ ...thStyle, textAlign: "center", minWidth: "60px" }}>ID</th>
+            <th style={thStyle}>Nombre</th>
+            <th style={thStyle}>Identificación</th>
+            <th style={{ ...thStyle, textAlign: "center" }}>Teléfono</th>
+            <th style={thStyle}>Email</th>
+            <th style={thStyle}>Dirección</th>
+            <th style={{ ...thStyle, textAlign: "center", minWidth: "110px" }}>Acciones</th>
           </tr>
         </thead>
         <tbody>
           {proveedores.map((p) => (
-            <tr key={p.id} style={{ borderTop: "1px solid #444" }}>
-              <td style={{ padding: "8px" }}>{p.id}</td>
-              <td style={{ padding: "8px" }}>{p.nombre}</td>
-              <td style={{ padding: "8px" }}>{p.identificacion}</td>
-              <td style={{ padding: "8px" }}>{p.telefono}</td>
-              <td style={{ padding: "8px" }}>{p.email}</td>
-              <td style={{ padding: "8px" }}>{p.direccion}</td>
-              <td style={{ padding: "8px" }}>
-                <button onClick={() => editarProveedor(p)} style={{ marginRight: "10px" }}>✏️</button>
-                <button onClick={() => eliminarProveedor(p.id)}>🗑️</button>
+            <tr key={p.id} style={{ borderTop: "1px solid #333" }}>
+              <td style={tdStyleNumero}>{p.id}</td>
+              <td style={tdStyleTexto}>{p.nombre}</td>
+              <td style={tdStyleTexto}>{p.identificacion}</td>
+              <td style={tdStyleNumero}>{p.telefono}</td>
+              <td style={tdStyleTexto}>{p.email}</td>
+              <td style={tdStyleTexto}>{p.direccion}</td>
+              <td style={{ ...tdStyleNumero, display: "flex", justifyContent: "center", gap: "10px" }}>
+                <button
+                  onClick={() => editarProveedor(p)}
+                  style={botonAccion}
+                  title="Editar Proveedor"
+                  onMouseOver={e => (e.currentTarget.style.color = "#4a90e2")}
+                  onMouseOut={e => (e.currentTarget.style.color = "#a0a0a0")}
+                >
+                  ✏️
+                </button>
+                <button
+                  onClick={() => eliminarProveedor(p.id)}
+                  style={{ ...botonAccion, color: "#e24a4a" }}
+                  title="Eliminar Proveedor"
+                  onMouseOver={e => (e.currentTarget.style.color = "#b83b3b")}
+                  onMouseOut={e => (e.currentTarget.style.color = "#e24a4a")}
+                >
+                  🗑️
+                </button>
               </td>
             </tr>
           ))}
+          {proveedores.length === 0 && (
+            <tr>
+              <td colSpan="7" style={{ padding: "20px", textAlign: "center", color: "#888" }}>
+                No hay proveedores registrados.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>

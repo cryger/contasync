@@ -15,12 +15,10 @@ const Budget = () => {
   const [filtroCentroCostoId, setFiltroCentroCostoId] = useState("");
   const [montoDisplay, setMontoDisplay] = useState("");
 
-  // Formatear número con separadores de miles
   const formatNumber = (value) => {
     return value ? value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "";
   };
 
-  // Quitar puntos para guardar el valor
   const parseNumber = (value) => {
     return value.replace(/\./g, "");
   };
@@ -46,12 +44,12 @@ const Budget = () => {
   const handleMontoChange = (e) => {
     let value = e.target.value.replace(/[^\d]/g, '');
     setMontoDisplay(value ? `$ ${formatNumber(value)}` : "");
-    setNuevoPresupuesto({...nuevoPresupuesto, monto_total: value});
+    setNuevoPresupuesto({ ...nuevoPresupuesto, monto_total: value });
   };
 
   const handleChange = (e) => {
-    const {name, value} = e.target;
-    setNuevoPresupuesto({...nuevoPresupuesto, [name]: value});
+    const { name, value } = e.target;
+    setNuevoPresupuesto({ ...nuevoPresupuesto, [name]: value });
   };
 
   const limpiarFormulario = () => {
@@ -111,7 +109,6 @@ const Budget = () => {
     }
   };
 
-  // Formatear fecha para mostrar en tabla
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('es-ES');
   };
@@ -119,7 +116,7 @@ const Budget = () => {
   return (
     <div style={{ padding: "20px", color: "white" }}>
       <h2>{editandoId ? "Editar Presupuesto" : "Nuevo Presupuesto"}</h2>
-      
+
       <form onSubmit={crearOActualizarPresupuesto} style={{ marginBottom: "20px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
           <div>
@@ -132,7 +129,6 @@ const Budget = () => {
               style={{ width: "100%" }}
             />
           </div>
-
           <div>
             <label>Monto Total:</label>
             <input
@@ -143,7 +139,6 @@ const Budget = () => {
               style={{ width: "100%" }}
             />
           </div>
-
           <div>
             <label>Fecha Inicio:</label>
             <input
@@ -155,7 +150,6 @@ const Budget = () => {
               style={{ width: "100%" }}
             />
           </div>
-
           <div>
             <label>Fecha Fin:</label>
             <input
@@ -168,7 +162,6 @@ const Budget = () => {
               style={{ width: "100%" }}
             />
           </div>
-
           <div>
             <label>Centro de Costo:</label>
             <select
@@ -210,30 +203,32 @@ const Budget = () => {
       </div>
 
       <h2>Lista de Presupuestos</h2>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
         <thead>
-          <tr style={{ backgroundColor: "#2c2c2e" }}>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Monto</th>
-            <th>Inicio</th>
-            <th>Fin</th>
-            <th>Centro</th>
-            <th>Acciones</th>
+          <tr style={{ backgroundColor: "#2c2c2e", color: "white" }}>
+            <th style={{ padding: "8px", borderBottom: "1px solid #444" }}>ID</th>
+            <th style={{ padding: "8px", borderBottom: "1px solid #444" }}>Nombre</th>
+            <th style={{ padding: "8px", borderBottom: "1px solid #444" }}>Monto</th>
+            <th style={{ padding: "8px", borderBottom: "1px solid #444" }}>Inicio</th>
+            <th style={{ padding: "8px", borderBottom: "1px solid #444" }}>Fin</th>
+            <th style={{ padding: "8px", borderBottom: "1px solid #444" }}>Centro</th>
+            <th style={{ padding: "8px", borderBottom: "1px solid #444" }}>Acciones</th>
           </tr>
         </thead>
         <tbody>
           {presupuestos
             .filter(p => !filtroCentroCostoId || p.centro_costo_id.toString() === filtroCentroCostoId)
             .map(p => (
-              <tr key={p.id} style={{ borderBottom: "1px solid #444" }}>
-                <td>{p.id}</td>
-                <td>{p.nombre}</td>
-                <td>$ {formatNumber(p.monto_total)}</td>
-                <td>{formatDate(p.fecha_inicio)}</td>
-                <td>{formatDate(p.fecha_fin)}</td>
-                <td>{centrosCostos.find(c => c.id === p.centro_costo_id)?.nombre || '-'}</td>
-                <td>
+              <tr key={p.id} style={{ borderBottom: "1px solid #444", backgroundColor: "#1c1c1e" }}>
+                <td style={{ padding: "8px" }}>{p.id}</td>
+                <td style={{ padding: "8px" }}>{p.nombre}</td>
+                <td style={{ padding: "8px" }}>$ {formatNumber(p.monto_total)}</td>
+                <td style={{ padding: "8px" }}>{formatDate(p.fecha_inicio)}</td>
+                <td style={{ padding: "8px" }}>{formatDate(p.fecha_fin)}</td>
+                <td style={{ padding: "8px" }}>
+                  {centrosCostos.find(c => c.id === p.centro_costo_id)?.nombre || '-'}
+                </td>
+                <td style={{ padding: "8px" }}>
                   <button onClick={() => editarPresupuesto(p)} style={{ marginRight: "5px" }}>
                     Editar
                   </button>

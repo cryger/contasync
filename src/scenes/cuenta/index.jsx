@@ -14,13 +14,11 @@ const Cuenta = () => {
   const [filtroBancoId, setFiltroBancoId] = useState("");
   const [saldoDisplay, setSaldoDisplay] = useState("");
 
-  // Función para formatear con puntos de miles
   const formatNumberWithDots = (value) => {
     if (!value) return "";
     return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
-  // Función para parsear (quitar puntos)
   const parseNumber = (value) => {
     return value.replace(/\./g, "");
   };
@@ -46,17 +44,9 @@ const Cuenta = () => {
 
   const handleSaldoChange = (e) => {
     let value = e.target.value;
-    
-    // Permitir solo números y puntos
     value = value.replace(/[^\d\.]/g, '');
-    
-    // Eliminar puntos existentes para evitar conflictos
     const parsedValue = parseNumber(value);
-    
-    // Formatear con puntos de miles
     const formattedValue = formatNumberWithDots(parsedValue);
-    
-    // Actualizar estados
     setSaldoDisplay(formattedValue ? `$ ${formattedValue}` : "");
     setNuevaCuenta({
       ...nuevaCuenta,
@@ -84,7 +74,6 @@ const Cuenta = () => {
 
   const crearOActualizarCuenta = async (e) => {
     e.preventDefault();
-
     try {
       const datos = {
         numero_cuenta: nuevaCuenta.numero_cuenta,
@@ -122,7 +111,6 @@ const Cuenta = () => {
 
   const eliminarCuenta = async (id) => {
     if (!window.confirm("¿Estás seguro de eliminar esta cuenta?")) return;
-
     try {
       await axios.delete(`http://localhost:5000/api/cuentas/${id}`);
       setCuentas(cuentas.filter((c) => c.id !== id));
@@ -132,7 +120,6 @@ const Cuenta = () => {
     }
   };
 
-  // Función para formatear moneda para visualización en tabla
   const formatCurrency = (value) => {
     if (!value) return "";
     return `$ ${formatNumberWithDots(value.toString())}`;
@@ -229,28 +216,30 @@ const Cuenta = () => {
 
       <h2>Lista de Cuentas Bancarias</h2>
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", backgroundColor: "#1e1e1e" }}>
           <thead>
-            <tr style={{ backgroundColor: "#2c2c2e" }}>
-              <th>ID</th>
-              <th>Número de Cuenta</th>
-              <th>Tipo</th>
-              <th>Banco</th>
-              <th>Saldo Actual</th>
-              <th>Acciones</th>
+            <tr style={{ backgroundColor: "#333", color: "#fff" }}>
+              <th style={{ padding: "10px", textAlign: "center" }}>ID</th>
+              <th style={{ padding: "10px", textAlign: "center" }}>Número de Cuenta</th>
+              <th style={{ padding: "10px", textAlign: "center" }}>Tipo</th>
+              <th style={{ padding: "10px", textAlign: "center" }}>Banco</th>
+              <th style={{ padding: "10px", textAlign: "center" }}>Saldo Actual</th>
+              <th style={{ padding: "10px", textAlign: "center" }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {cuentas
               .filter(c => !filtroBancoId || c.banco_id.toString() === filtroBancoId)
               .map((c) => (
-                <tr key={c.id} style={{ borderBottom: "1px solid #444" }}>
-                  <td>{c.id}</td>
-                  <td>{c.numero_cuenta}</td>
-                  <td>{c.tipo_cuenta}</td>
-                  <td>{bancos.find(b => b.id === c.banco_id)?.nombre || c.banco_id}</td>
-                  <td>{formatCurrency(c.saldo_actual)}</td>
-                  <td>
+                <tr key={c.id} style={{ borderBottom: "1px solid #444", textAlign: "center" }}>
+                  <td style={{ padding: "8px" }}>{c.id}</td>
+                  <td style={{ padding: "8px" }}>{c.numero_cuenta}</td>
+                  <td style={{ padding: "8px" }}>{c.tipo_cuenta}</td>
+                  <td style={{ padding: "8px" }}>
+                    {bancos.find(b => b.id === c.banco_id)?.nombre || c.banco_id}
+                  </td>
+                  <td style={{ padding: "8px" }}>{formatCurrency(c.saldo_actual)}</td>
+                  <td style={{ padding: "8px" }}>
                     <button onClick={() => editarCuenta(c)} style={{ marginRight: "5px" }}>
                       Editar
                     </button>

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 
 const Bancos = () => {
-  // Estados para manejar los datos
   const [bancos, setBancos] = useState([]);
   const [nuevoBanco, setNuevoBanco] = useState({
     nombre: "",
@@ -13,12 +12,10 @@ const Bancos = () => {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
-  // Obtener los bancos al cargar el componente
   useEffect(() => {
     obtenerBancos();
   }, []);
 
-  // Función para obtener todos los bancos
   const obtenerBancos = async () => {
     try {
       setCargando(true);
@@ -33,7 +30,6 @@ const Bancos = () => {
     }
   };
 
-  // Manejar cambios en los inputs del formulario
   const handleChange = (e) => {
     const { name, value } = e.target;
     setNuevoBanco({
@@ -42,7 +38,6 @@ const Bancos = () => {
     });
   };
 
-  // Limpiar el formulario
   const limpiarFormulario = () => {
     setNuevoBanco({
       nombre: "",
@@ -52,20 +47,14 @@ const Bancos = () => {
     setEditandoId(null);
   };
 
-  // Crear o actualizar un banco
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     try {
       if (editandoId) {
-        // Actualizar banco existente
         await axios.put(`http://localhost:5000/api/bancos/${editandoId}`, nuevoBanco);
       } else {
-        // Crear nuevo banco
         await axios.post("http://localhost:5000/api/bancos", nuevoBanco);
       }
-      
-      // Refrescar la lista y limpiar el formulario
       obtenerBancos();
       limpiarFormulario();
     } catch (err) {
@@ -74,7 +63,6 @@ const Bancos = () => {
     }
   };
 
-  // Editar un banco existente
   const editarBanco = (banco) => {
     setNuevoBanco({
       nombre: banco.nombre,
@@ -85,13 +73,10 @@ const Bancos = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Eliminar un banco
   const eliminarBanco = async (id) => {
     if (!window.confirm("¿Estás seguro de eliminar este banco?")) return;
-    
     try {
       await axios.delete(`http://localhost:5000/api/bancos/${id}`);
-      // Actualizar la lista eliminando el banco
       setBancos(bancos.filter(banco => banco.id !== id));
     } catch (err) {
       console.error("Error al eliminar el banco:", err);
@@ -99,7 +84,6 @@ const Bancos = () => {
     }
   };
 
-  // Estilos CSS
   const styles = {
     container: {
       padding: "20px",
@@ -157,17 +141,23 @@ const Bancos = () => {
     table: {
       width: "100%",
       borderCollapse: "collapse",
-      marginTop: "20px"
+      marginTop: "20px",
+      border: "1px solid #444"
     },
     tableHeader: {
-      backgroundColor: "#2c2c2e",
-      textAlign: "left"
+      backgroundColor: "#1f1f1f",
+      color: "#e0e0e0",
+      fontWeight: "bold",
+      textTransform: "uppercase",
+      textAlign: "center",
+      padding: "12px"
     },
     tableRow: {
       borderBottom: "1px solid #444"
     },
     tableCell: {
-      padding: "12px 15px"
+      padding: "12px 15px",
+      textAlign: "center"
     },
     loading: {
       textAlign: "center",
@@ -186,9 +176,9 @@ const Bancos = () => {
   return (
     <div style={styles.container}>
       <h1>{editandoId ? "Editar Banco" : "Registrar Nuevo Banco"}</h1>
-      
+
       {error && <div style={styles.error}>{error}</div>}
-      
+
       <form onSubmit={handleSubmit} style={styles.form}>
         <div style={styles.formGrid}>
           <div style={styles.inputGroup}>
@@ -203,7 +193,7 @@ const Bancos = () => {
               placeholder="Ej: Banco Nacional"
             />
           </div>
-          
+
           <div style={styles.inputGroup}>
             <label style={styles.label}>País:</label>
             <input
@@ -216,7 +206,7 @@ const Bancos = () => {
               placeholder="Ej: Colombia"
             />
           </div>
-          
+
           <div style={styles.inputGroup}>
             <label style={styles.label}>Ciudad:</label>
             <input
@@ -229,27 +219,20 @@ const Bancos = () => {
             />
           </div>
         </div>
-        
-        <button 
-          type="submit" 
-          style={{ ...styles.button, ...styles.primaryButton }}
-        >
+
+        <button type="submit" style={{ ...styles.button, ...styles.primaryButton }}>
           {editandoId ? "Actualizar Banco" : "Registrar Banco"}
         </button>
-        
+
         {editandoId && (
-          <button 
-            type="button" 
-            onClick={limpiarFormulario}
-            style={{ ...styles.button, ...styles.secondaryButton }}
-          >
+          <button type="button" onClick={limpiarFormulario} style={{ ...styles.button, ...styles.secondaryButton }}>
             Cancelar
           </button>
         )}
       </form>
-      
+
       <h2>Listado de Bancos</h2>
-      
+
       {cargando ? (
         <div style={styles.loading}>Cargando bancos...</div>
       ) : bancos.length === 0 ? (
