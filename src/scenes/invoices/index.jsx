@@ -1,5 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 
 const Invoices = () => {
   // Estados para los datos
@@ -12,6 +15,10 @@ const Invoices = () => {
   const [proveedores, setProveedores] = useState([]);
   const [centrosCostos, setCentrosCostos] = useState([]);
   const [presupuestos, setPresupuestos] = useState([]);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isGeneratingExcel, setIsGeneratingExcel] = useState(false);
+  
+  const pdfRef = useRef();
 
   // Estados para los formularios
   const [nuevoIngreso, setNuevoIngreso] = useState({
@@ -88,32 +95,86 @@ const Invoices = () => {
     fetchData();
   }, []);
 
-  // Formatear moneda
-  const formatCurrency = (value) => {
-    if (!value) return "$ 0";
-    const number = parseFloat(value.toString().replace(/[^\d]/g, ""));
-    return isNaN(number) 
-      ? "$ 0" 
-      : `$ ${number.toLocaleString("es-CO", { minimumFractionDigits: 0 })}`;
-  };
+ // Función para formatear moneda (versión mejorada)
+const formatCurrency = (value) => {
+  if (!value && value !== 0) return "$ 0";
+  
+  // Si el valor ya está formateado, lo devolvemos tal cual
+  if (typeof value === 'string' && (value.includes('$') || value.includes('.'))) {
+    return value;
+  }
+  
+  // Convertimos a número
+  const number = typeof value === 'number' ? value : parseFloat(value.toString().replace(/[^\d]/g, ""));
+  return isNaN(number) 
+    ? "$ 0" 
+    : `$ ${number.toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+};
 
-  // Manejadores de cambios
-  const handleChange = (setState, state) => (e) => {
-    const { name, value } = e.target;
-    setState({ ...state, [name]: value });
-  };
+// Función para limpiar el formato de moneda y obtener el valor numérico
+const cleanMoneyValue = (value) => {
+  if (!value) return 0;
+  
+  // Si ya es un número, lo devolvemos directamente
+  if (typeof value === 'number') return value;
+  
+  // Si es un string con formato de moneda, lo limpiamos
+  const cleaned = value.toString()
+    .replace(/\$\s?/g, '')  // Elimina el símbolo $
+    .replace(/\./g, '')     // Elimina los puntos de mil
+    .replace(',', '.');     // Reemplaza comas por puntos para decimales
+  
+  const number = parseFloat(cleaned);
+  return isNaN(number) ? 0 : number;
+};
 
-  // Calcular totales para ingresos
+// Función para manejar el cambio en campos monetarios (mejorada)
+const handleMoneyChange = (fieldName) => (e) => {
+  const rawValue = e.target.value;
+  
+  // Permitimos solo números, puntos y comas
+  const filteredValue = rawValue
+    .replace(/[^\d.,]/g, '')  // Solo permite dígitos, puntos y comas
+    .replace(/(\..*)\./g, '$1') // Evita múltiples puntos decimales
+    .replace(/(,.*),/g, '$1'); // Evita múltiples comas
+  
+  setNuevoIngreso(prev => ({
+    ...prev,
+    [fieldName]: filteredValue
+  }));
+};
+
+// Función para formatear los campos monetarios cuando pierden el foco
+const handleMoneyBlur = (fieldName) => (e) => {
+  const value = e.target.value;
+  const numericValue = cleanMoneyValue(value);
+  
+  setNuevoIngreso(prev => ({
+    ...prev,
+    [fieldName]: formatCurrency(numericValue)
+  }));
+  
+  // Recalculamos los totales
+  calcularTotalesIngreso();
+};
+
+  // Calcular totales para ingresos (versión mejorada)
   const calcularTotalesIngreso = () => {
-    const valorRecibido = parseFloat(nuevoIngreso.valor_recibido.replace(/[^\d]/g, "")) || 0;
-    const saldoAnterior = parseFloat(nuevoIngreso.saldo_anterior.replace(/[^\d]/g, "")) || 0;
-    const total = valorRecibido + saldoAnterior;
+    const valorRecibido = cleanMoneyValue(nuevoIngreso.valor_recibido);
+    const saldoAnterior = cleanMoneyValue(nuevoIngreso.saldo_anterior);
+    const saldoEnCaja = valorRecibido + saldoAnterior;
     
     setNuevoIngreso(prev => ({
       ...prev,
-      saldo_en_caja: total.toString(),
-      total_ingresos: total.toString()
+      saldo_en_caja: formatCurrency(saldoEnCaja),
+      total_ingresos: formatCurrency(saldoEnCaja)
     }));
+  };
+
+  // Manejador de cambios para campos no monetarios
+  const handleChange = (setState, state) => (e) => {
+    const { name, value } = e.target;
+    setState({ ...state, [name]: value });
   };
 
   // Crear nuevo ingreso
@@ -122,10 +183,10 @@ const Invoices = () => {
     try {
       const datos = {
         ...nuevoIngreso,
-        valor_recibido: parseFloat(nuevoIngreso.valor_recibido.replace(/[^\d]/g, "")),
-        saldo_anterior: parseFloat(nuevoIngreso.saldo_anterior.replace(/[^\d]/g, "")),
-        saldo_en_caja: parseFloat(nuevoIngreso.saldo_en_caja.replace(/[^\d]/g, "")),
-        total_ingresos: parseFloat(nuevoIngreso.total_ingresos.replace(/[^\d]/g, "")),
+        valor_recibido: cleanMoneyValue(nuevoIngreso.valor_recibido),
+        saldo_anterior: cleanMoneyValue(nuevoIngreso.saldo_anterior),
+        saldo_en_caja: cleanMoneyValue(nuevoIngreso.saldo_en_caja),
+        total_ingresos: cleanMoneyValue(nuevoIngreso.total_ingresos),
         cliente_id: nuevoIngreso.cliente_id || null,
         banco_id: nuevoIngreso.banco_id || null,
         cuenta_id: nuevoIngreso.cuenta_id || null
@@ -150,13 +211,53 @@ const Invoices = () => {
     }
   };
 
+  // Función para manejar el cambio en campos monetarios de gastos
+  const handleGastoMoneyChange = (e) => {
+    const { name, value } = e.target;
+    setNuevoGasto(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Función para formatear los campos monetarios de gastos cuando pierden el foco
+  const handleGastoMoneyBlur = (e) => {
+    const { name, value } = e.target;
+    const numericValue = cleanMoneyValue(value);
+    
+    setNuevoGasto(prev => ({
+      ...prev,
+      [name]: formatCurrency(numericValue)
+    }));
+  };
+
+  // Función para manejar el cambio en campos monetarios de recibos
+  const handleReciboMoneyChange = (e) => {
+    const { name, value } = e.target;
+    setNuevoRecibo(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Función para formatear los campos monetarios de recibos cuando pierden el foco
+  const handleReciboMoneyBlur = (e) => {
+    const { name, value } = e.target;
+    const numericValue = cleanMoneyValue(value);
+    
+    setNuevoRecibo(prev => ({
+      ...prev,
+      [name]: formatCurrency(numericValue)
+    }));
+  };
+
   // Crear nuevo gasto
   const crearGasto = async (e) => {
     e.preventDefault();
     try {
       const datos = {
         ...nuevoGasto,
-        monto: parseFloat(nuevoGasto.monto.replace(/[^\d]/g, "")),
+        monto: cleanMoneyValue(nuevoGasto.monto),
         banco_id: nuevoGasto.banco_id || null,
         cuenta_id: nuevoGasto.cuenta_id || null,
         proveedor_id: nuevoGasto.proveedor_id || null,
@@ -190,7 +291,7 @@ const Invoices = () => {
     try {
       const datos = {
         ...nuevoRecibo,
-        monto: parseFloat(nuevoRecibo.monto.replace(/[^\d]/g, ""))
+        monto: cleanMoneyValue(nuevoRecibo.monto)
       };
 
       const { data } = await axios.post("http://localhost:5000/api/recibos", datos);
@@ -212,9 +313,187 @@ const Invoices = () => {
     return new Date(dateString).toLocaleDateString('es-ES');
   };
 
+  // Función para exportar a PDF
+  const downloadPDF = async () => {
+    setIsGeneratingPDF(true);
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const element = pdfRef.current;
+      
+      const originalStyles = {
+        width: element.style.width,
+        height: element.style.height,
+        padding: element.style.padding,
+        margin: element.style.margin,
+      };
+
+      element.style.width = "297mm";
+      element.style.padding = "15mm";
+      element.style.margin = "0";
+      element.style.overflow = "hidden";
+
+      const options = {
+        scale: 1,
+        useCORS: true,
+        allowTaint: true,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+        onclone: (clonedDoc) => {
+          clonedDoc.body.style.overflow = "hidden";
+        }
+      };
+
+      const canvas = await html2canvas(element, options);
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      
+      const imgRatio = canvas.height / canvas.width;
+      const pdfRatio = pageHeight / pageWidth;
+      let imgWidth, imgHeight;
+
+      if (imgRatio > pdfRatio) {
+        imgHeight = pageHeight - 20;
+        imgWidth = imgHeight / imgRatio;
+      } else {
+        imgWidth = pageWidth - 20;
+        imgHeight = imgWidth * imgRatio;
+      }
+
+      const x = (pageWidth - imgWidth) / 2;
+      const y = (pageHeight - imgHeight) / 2;
+
+      pdf.addImage(canvas, 'PNG', x, y, imgWidth, imgHeight);
+      
+      element.style.width = originalStyles.width;
+      element.style.height = originalStyles.height;
+      element.style.padding = originalStyles.padding;
+      element.style.margin = originalStyles.margin;
+
+      pdf.save('reporte_financiero.pdf');
+      
+    } catch (error) {
+      console.error("Error al generar PDF:", error);
+      alert("Error al generar el PDF. Por favor intente nuevamente.");
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
+  // Función para exportar a Excel
+  const downloadExcel = async () => {
+    setIsGeneratingExcel(true);
+    
+    try {
+      const wb = XLSX.utils.book_new();
+      
+      const ingresosData = ingresos.map(ingreso => ({
+        "N° Recibo": ingreso.numero_recibo,
+        "Fecha": formatDate(ingreso.fecha),
+        "Cliente": clientes.find(c => c.id === ingreso.cliente_id)?.nombre || "Sin cliente",
+        "Valor Recibido": cleanMoneyValue(ingreso.valor_recibido),
+        "Saldo Anterior": cleanMoneyValue(ingreso.saldo_anterior),
+        "Saldo en Caja": cleanMoneyValue(ingreso.saldo_en_caja),
+        "Total Ingresos": cleanMoneyValue(ingreso.total_ingresos),
+        "Banco": bancos.find(b => b.id === ingreso.banco_id)?.nombre || "No aplica",
+        "Cuenta": cuentas.find(c => c.id === ingreso.cuenta_id)?.numero_cuenta || "No aplica"
+      }));
+      
+      const ingresosWS = XLSX.utils.json_to_sheet(ingresosData);
+      XLSX.utils.book_append_sheet(wb, ingresosWS, "Ingresos");
+      
+      const gastosData = gastos.map(gasto => ({
+        "Fecha": formatDate(gasto.fecha),
+        "Descripción": gasto.descripcion,
+        "Categoría": gasto.categoria,
+        "Monto": cleanMoneyValue(gasto.monto),
+        "Método de Pago": gasto.metodo_pago,
+        "Proveedor": proveedores.find(p => p.id === gasto.proveedor_id)?.nombre || "Sin proveedor",
+        "Centro de Costo": centrosCostos.find(cc => cc.id === gasto.centro_costo_id)?.nombre || "No aplica",
+        "Presupuesto": presupuestos.find(p => p.id === gasto.presupuesto_id)?.nombre || "No aplica"
+      }));
+      
+      const gastosWS = XLSX.utils.json_to_sheet(gastosData);
+      XLSX.utils.book_append_sheet(wb, gastosWS, "Gastos");
+      
+      const recibosData = recibos.map(recibo => {
+        const ingreso = ingresos.find(i => i.id === recibo.ingreso_id);
+        const gasto = gastos.find(g => g.id === recibo.gasto_id);
+        
+        return {
+          "ID": recibo.id,
+          "Fecha": formatDate(recibo.fecha),
+          "Ingreso": ingreso ? `Recibo #${ingreso.numero_recibo}` : `ID ${recibo.ingreso_id}`,
+          "Monto Ingreso": ingreso ? cleanMoneyValue(ingreso.valor_recibido) : 0,
+          "Gasto": gasto ? gasto.descripcion : `ID ${recibo.gasto_id}`,
+          "Monto Gasto": gasto ? cleanMoneyValue(gasto.monto) : 0,
+          "Monto Recibo": cleanMoneyValue(recibo.monto)
+        };
+      });
+      
+      const recibosWS = XLSX.utils.json_to_sheet(recibosData);
+      XLSX.utils.book_append_sheet(wb, recibosWS, "Recibos");
+      
+      XLSX.writeFile(wb, "reporte_financiero.xlsx");
+      
+    } catch (error) {
+      console.error("Error al generar Excel:", error);
+      alert("Error al generar el archivo Excel. Por favor intente nuevamente.");
+    } finally {
+      setIsGeneratingExcel(false);
+    }
+  };
+
   return (
-    <div style={{ padding: "20px", color: "white" }}>
-      <h1>Gestión de Recibos</h1>
+    <div 
+      ref={pdfRef}
+      style={{ 
+        padding: "20px", 
+        color: "white",
+        '@media print': {
+          transform: 'scale(0.9)',
+          transformOrigin: '0 0',
+          overflow: 'hidden'
+        }
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+        <h1 style={{ margin: 0 }}>Gestión de Recibos</h1>
+        <div>
+          <button 
+            onClick={downloadPDF} 
+            disabled={isGeneratingPDF}
+            style={{
+              marginRight: "10px",
+              padding: "8px 16px",
+              backgroundColor: isGeneratingPDF ? "#cccccc" : "#4CAF50",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer"
+            }}
+          >
+            {isGeneratingPDF ? "Generando PDF..." : "Exportar a PDF"}
+          </button>
+          <button 
+            onClick={downloadExcel} 
+            disabled={isGeneratingExcel}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: isGeneratingExcel ? "#cccccc" : "#2196F3",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer"
+            }}
+          >
+            {isGeneratingExcel ? "Generando Excel..." : "Exportar a Excel"}
+          </button>
+        </div>
+      </div>
 
       {/* Formulario de Ingresos */}
       <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
@@ -264,11 +543,9 @@ const Invoices = () => {
               <label>Valor Recibido:</label>
               <input
                 name="valor_recibido"
-                value={formatCurrency(nuevoIngreso.valor_recibido)}
-                onChange={(e) => {
-                  handleChange(setNuevoIngreso, nuevoIngreso)(e);
-                  calcularTotalesIngreso();
-                }}
+                value={nuevoIngreso.valor_recibido}
+                onChange={handleMoneyChange('valor_recibido')}
+                onBlur={handleMoneyBlur('valor_recibido')}
                 placeholder="$ 0"
                 style={{ width: "100%" }}
                 required
@@ -279,11 +556,9 @@ const Invoices = () => {
               <label>Saldo Anterior:</label>
               <input
                 name="saldo_anterior"
-                value={formatCurrency(nuevoIngreso.saldo_anterior)}
-                onChange={(e) => {
-                  handleChange(setNuevoIngreso, nuevoIngreso)(e);
-                  calcularTotalesIngreso();
-                }}
+                value={nuevoIngreso.saldo_anterior}
+                onChange={handleMoneyChange('saldo_anterior')}
+                onBlur={handleMoneyBlur('saldo_anterior')}
                 placeholder="$ 0"
                 style={{ width: "100%" }}
                 required
@@ -294,7 +569,7 @@ const Invoices = () => {
               <label>Saldo en Caja:</label>
               <input
                 name="saldo_en_caja"
-                value={formatCurrency(nuevoIngreso.saldo_en_caja)}
+                value={nuevoIngreso.saldo_en_caja}
                 readOnly
                 style={{ width: "100%", backgroundColor: "#f0f0f0" }}
               />
@@ -304,7 +579,7 @@ const Invoices = () => {
               <label>Total Ingresos:</label>
               <input
                 name="total_ingresos"
-                value={formatCurrency(nuevoIngreso.total_ingresos)}
+                value={nuevoIngreso.total_ingresos}
                 readOnly
                 style={{ width: "100%", backgroundColor: "#f0f0f0" }}
               />
@@ -344,6 +619,41 @@ const Invoices = () => {
         </form>
       </div>
 
+      {/* Lista de Ingresos */}
+      <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
+        <h2>Lista de Ingresos</h2>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "600px" }}>
+            <thead>
+              <tr style={{ backgroundColor: "#2c2c2e", color: "#fff", textAlign: "left" }}>
+                <th style={{ padding: "10px" }}>N° Recibo</th>
+                <th style={{ padding: "10px" }}>Fecha</th>
+                <th style={{ padding: "10px" }}>Cliente</th>
+                <th style={{ padding: "10px", textAlign: "right" }}>Valor Recibido</th>
+                <th style={{ padding: "10px", textAlign: "right" }}>Saldo Anterior</th>
+                <th style={{ padding: "10px", textAlign: "right" }}>Saldo en Caja</th>
+                <th style={{ padding: "10px", textAlign: "right" }}>Total Ingresos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ingresos.map((i) => (
+                <tr key={i.id} style={{ borderBottom: "1px solid #ccc" }}>
+                  <td style={{ padding: "10px" }}>{i.numero_recibo}</td>
+                  <td style={{ padding: "10px" }}>{formatDate(i.fecha)}</td>
+                  <td style={{ padding: "10px" }}>
+                    {clientes.find(c => c.id === i.cliente_id)?.nombre || "Sin cliente"}
+                  </td>
+                  <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.valor_recibido)}</td>
+                  <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.saldo_anterior)}</td>
+                  <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.saldo_en_caja)}</td>
+                  <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.total_ingresos)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Formulario de Gastos */}
       <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
         <h2>Registrar Gasto</h2>
@@ -376,8 +686,9 @@ const Invoices = () => {
               <label>Monto:</label>
               <input
                 name="monto"
-                value={formatCurrency(nuevoGasto.monto)}
-                onChange={handleChange(setNuevoGasto, nuevoGasto)}
+                value={nuevoGasto.monto}
+                onChange={handleGastoMoneyChange}
+                onBlur={handleGastoMoneyBlur}
                 placeholder="$ 0"
                 style={{ width: "100%" }}
                 required
@@ -490,6 +801,37 @@ const Invoices = () => {
         </form>
       </div>
 
+      {/* Lista de Gastos */}
+      <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
+        <h2>Lista de Gastos</h2>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "600px" }}>
+            <thead>
+              <tr style={{ backgroundColor: "#2c2c2e", color: "#fff", textAlign: "left" }}>
+                <th style={{ padding: "10px" }}>Fecha</th>
+                <th style={{ padding: "10px" }}>Descripción</th>
+                <th style={{ padding: "10px" }}>Categoría</th>
+                <th style={{ padding: "10px" }}>Proveedor</th>
+                <th style={{ padding: "10px", textAlign: "right" }}>Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {gastos.map((g) => (
+                <tr key={g.id} style={{ borderBottom: "1px solid #ccc" }}>
+                  <td style={{ padding: "10px" }}>{formatDate(g.fecha)}</td>
+                  <td style={{ padding: "10px" }}>{g.descripcion}</td>
+                  <td style={{ padding: "10px" }}>{g.categoria}</td>
+                  <td style={{ padding: "10px" }}>
+                    {proveedores.find(p => p.id === g.proveedor_id)?.nombre || "Sin proveedor"}
+                  </td>
+                  <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(g.monto)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Formulario de Recibos */}
       <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
         <h2>Crear Recibo</h2>
@@ -547,8 +889,9 @@ const Invoices = () => {
               <label>Monto:</label>
               <input
                 name="monto"
-                value={formatCurrency(nuevoRecibo.monto)}
-                onChange={handleChange(setNuevoRecibo, nuevoRecibo)}
+                value={nuevoRecibo.monto}
+                onChange={handleReciboMoneyChange}
+                onBlur={handleReciboMoneyBlur}
                 placeholder="$ 0"
                 style={{ width: "100%" }}
                 required
@@ -559,7 +902,7 @@ const Invoices = () => {
         </form>
       </div>
 
-       {/* Tabla de Recibos */}
+      {/* Tabla de Recibos */}
       <div>
         <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Lista de Recibos</h2>
         <div style={{ overflowX: "auto" }}>
@@ -574,19 +917,24 @@ const Invoices = () => {
               </tr>
             </thead>
             <tbody>
-              {recibos.map((r) => (
-                <tr key={r.id} style={{ borderBottom: "1px solid #ccc" }}>
-                  <td style={{ padding: "10px" }}>{r.id}</td>
-                  <td style={{ padding: "10px" }}>{formatDate(r.fecha)}</td>
-                  <td style={{ padding: "10px" }}>
-                    {ingresos.find(i => i.id === r.ingreso_id)?.numero_recibo || `Ingreso ${r.ingreso_id}`}
-                  </td>
-                  <td style={{ padding: "10px" }}>
-                    {gastos.find(g => g.id === r.gasto_id)?.descripcion || `Gasto ${r.gasto_id}`}
-                  </td>
-                  <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(r.monto)}</td>
-                </tr>
-              ))}
+              {recibos.map((r) => {
+                const ingreso = ingresos.find(i => i.id === r.ingreso_id);
+                const gasto = gastos.find(g => g.id === r.gasto_id);
+                
+                return (
+                  <tr key={r.id} style={{ borderBottom: "1px solid #ccc" }}>
+                    <td style={{ padding: "10px" }}>{r.id}</td>
+                    <td style={{ padding: "10px" }}>{formatDate(r.fecha)}</td>
+                    <td style={{ padding: "10px" }}>
+                      {ingreso ? `Recibo #${ingreso.numero_recibo} - ${formatCurrency(ingreso.valor_recibido)}` : `Ingreso ${r.ingreso_id}`}
+                    </td>
+                    <td style={{ padding: "10px" }}>
+                      {gasto ? `${gasto.descripcion} - ${formatCurrency(gasto.monto)}` : `Gasto ${r.gasto_id}`}
+                    </td>
+                    <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(r.monto)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
