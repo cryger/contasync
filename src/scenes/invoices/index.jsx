@@ -948,7 +948,6 @@ const handleMoneyBlur = (fieldName) => (e) => {
     </table>
   </div>
 </div>
-
       {/* Formulario de Recibos */}
       <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
         <h2>Crear Recibo</h2>
