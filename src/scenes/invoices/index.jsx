@@ -94,21 +94,25 @@ const Invoices = () => {
     };
     fetchData();
   }, []);
-
- // Función para formatear moneda (versión mejorada)
+// Función para formatear moneda (versión mejorada)
 const formatCurrency = (value) => {
-  if (!value && value !== 0) return "$ 0";
+  if (value === null || value === undefined || value === '') return "$ 0";
   
   // Si el valor ya está formateado, lo devolvemos tal cual
-  if (typeof value === 'string' && (value.includes('$') || value.includes('.'))) {
+  if (typeof value === 'string' && value.includes('$')) {
     return value;
   }
   
   // Convertimos a número
-  const number = typeof value === 'number' ? value : parseFloat(value.toString().replace(/[^\d]/g, ""));
+  const number = typeof value === 'number' ? value : 
+    parseFloat(value.toString().replace(/[^\d.-]/g, ""));
+  
   return isNaN(number) 
     ? "$ 0" 
-    : `$ ${number.toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    : `$ ${number.toLocaleString("es-CO", { 
+        minimumFractionDigits: 0, 
+        maximumFractionDigits: 0 
+      })}`;
 };
 
 // Función para limpiar el formato de moneda y obtener el valor numérico
@@ -428,13 +432,15 @@ const handleMoneyBlur = (fieldName) => (e) => {
       `;
     }).join('');
 
-    // Construir el contenido HTML completo
+    // Construir el contenido HTML completo con margen inferior adicional
     pdfElement.innerHTML = `
-      <h1 style="text-align: center; margin-bottom: 15px; font-size: 16px;">Reporte Financiero Completo</h1>
-      ${createTableHTML("Ingresos", ingresosHeaders, ingresosRows)}
-      ${createTableHTML("Gastos", gastosHeaders, gastosRows)}
-      ${createTableHTML("Recibos", recibosHeaders, recibosRows)}
-    `;
+  <div style="margin-bottom: 50px;"> <!-- Aumentamos el margen inferior -->
+    <h1 style="text-align: center; margin-bottom: 13px; font-size: 14px;">Reporte Financiero Completo</h1>
+    ${createTableHTML("Ingresos", ingresosHeaders, ingresosRows)}
+    ${createTableHTML("Gastos", gastosHeaders, gastosRows)}
+    ${createTableHTML("Recibos", recibosHeaders, recibosRows)}
+  </div>
+`;
 
     document.body.appendChild(pdfElement);
 
@@ -457,12 +463,13 @@ const handleMoneyBlur = (fieldName) => (e) => {
     pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
     document.body.removeChild(pdfElement);
 
-    // Agregar paginación si es necesario
+    // Agregar paginación más abajo (ajustado a 15mm desde el borde inferior)
     const totalPages = pdf.internal.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       pdf.setPage(i);
       pdf.setFontSize(8);
-      pdf.text(`Página ${i} de ${totalPages}`, imgWidth - 20, imgHeight - 10);
+      // Posición ajustada: x = ancho-20mm, y = alto-15mm
+      pdf.text(`Página ${i} de ${totalPages}`, imgWidth - 20, imgHeight - 15);
     }
 
     pdf.save("reporte_financiero_completo.pdf");
@@ -711,40 +718,48 @@ const handleMoneyBlur = (fieldName) => (e) => {
         </form>
       </div>
 
-      {/* Lista de Ingresos */}
-      <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
-        <h2>Lista de Ingresos</h2>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "600px" }}>
-            <thead>
-              <tr style={{ backgroundColor: "#2c2c2e", color: "#fff", textAlign: "left" }}>
-                <th style={{ padding: "10px" }}>N° Recibo</th>
-                <th style={{ padding: "10px" }}>Fecha</th>
-                <th style={{ padding: "10px" }}>Cliente</th>
-                <th style={{ padding: "10px", textAlign: "right" }}>Valor Recibido</th>
-                <th style={{ padding: "10px", textAlign: "right" }}>Saldo Anterior</th>
-                <th style={{ padding: "10px", textAlign: "right" }}>Saldo en Caja</th>
-                <th style={{ padding: "10px", textAlign: "right" }}>Total Ingresos</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ingresos.map((i) => (
-                <tr key={i.id} style={{ borderBottom: "1px solid #ccc" }}>
-                  <td style={{ padding: "10px" }}>{i.numero_recibo}</td>
-                  <td style={{ padding: "10px" }}>{formatDate(i.fecha)}</td>
-                  <td style={{ padding: "10px" }}>
-                    {clientes.find(c => c.id === i.cliente_id)?.nombre || "Sin cliente"}
-                  </td>
-                  <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.valor_recibido)}</td>
-                  <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.saldo_anterior)}</td>
-                  <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.saldo_en_caja)}</td>
-                  <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.total_ingresos)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Lista de Ingresos - Versión Modificada */}
+<div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
+  <h2>Lista de Ingresos</h2>
+  <div style={{ overflowX: "auto" }}>
+    <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "800px" }}>
+      <thead>
+        <tr style={{ backgroundColor: "#2c2c2e", color: "#fff", textAlign: "left" }}>
+          <th style={{ padding: "10px" }}>N° Recibo</th>
+          <th style={{ padding: "10px" }}>Fecha</th>
+          <th style={{ padding: "10px" }}>Cliente</th>
+          <th style={{ padding: "10px", textAlign: "right" }}>Valor Recibido</th>
+          <th style={{ padding: "10px", textAlign: "right" }}>Saldo Anterior</th>
+          <th style={{ padding: "10px", textAlign: "right" }}>Saldo en Caja</th>
+          <th style={{ padding: "10px", textAlign: "right" }}>Total Ingresos</th>
+          <th style={{ padding: "10px" }}>Banco</th>
+          <th style={{ padding: "10px" }}>Cuenta</th>
+        </tr>
+      </thead>
+      <tbody>
+        {ingresos.map((i) => (
+          <tr key={i.id} style={{ borderBottom: "1px solid #ccc" }}>
+            <td style={{ padding: "10px" }}>{i.numero_recibo}</td>
+            <td style={{ padding: "10px" }}>{formatDate(i.fecha)}</td>
+            <td style={{ padding: "10px" }}>
+              {clientes.find(c => c.id === i.cliente_id)?.nombre || "Sin cliente"}
+            </td>
+            <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.valor_recibido)}</td>
+            <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.saldo_anterior)}</td>
+            <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.saldo_en_caja)}</td>
+            <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.total_ingresos)}</td>
+            <td style={{ padding: "10px" }}>
+              {bancos.find(b => b.id === i.banco_id)?.nombre || "N/A"}
+            </td>
+            <td style={{ padding: "10px" }}>
+              {cuentas.find(c => c.id === i.cuenta_id)?.numero_cuenta || "N/A"}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
 
       {/* Formulario de Gastos */}
       <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
@@ -893,36 +908,46 @@ const handleMoneyBlur = (fieldName) => (e) => {
         </form>
       </div>
 
-      {/* Lista de Gastos */}
-      <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
-        <h2>Lista de Gastos</h2>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "600px" }}>
-            <thead>
-              <tr style={{ backgroundColor: "#2c2c2e", color: "#fff", textAlign: "left" }}>
-                <th style={{ padding: "10px" }}>Fecha</th>
-                <th style={{ padding: "10px" }}>Descripción</th>
-                <th style={{ padding: "10px" }}>Categoría</th>
-                <th style={{ padding: "10px" }}>Proveedor</th>
-                <th style={{ padding: "10px", textAlign: "right" }}>Monto</th>
-              </tr>
-            </thead>
-            <tbody>
-              {gastos.map((g) => (
-                <tr key={g.id} style={{ borderBottom: "1px solid #ccc" }}>
-                  <td style={{ padding: "10px" }}>{formatDate(g.fecha)}</td>
-                  <td style={{ padding: "10px" }}>{g.descripcion}</td>
-                  <td style={{ padding: "10px" }}>{g.categoria}</td>
-                  <td style={{ padding: "10px" }}>
-                    {proveedores.find(p => p.id === g.proveedor_id)?.nombre || "Sin proveedor"}
-                  </td>
-                  <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(g.monto)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Lista de Gastos - Versión Modificada */}
+<div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
+  <h2>Lista de Gastos</h2>
+  <div style={{ overflowX: "auto" }}>
+    <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "900px" }}>
+      <thead>
+        <tr style={{ backgroundColor: "#2c2c2e", color: "#fff", textAlign: "left" }}>
+          <th style={{ padding: "10px" }}>Fecha</th>
+          <th style={{ padding: "10px" }}>Descripción</th>
+          <th style={{ padding: "10px" }}>Categoría</th>
+          <th style={{ padding: "10px" }}>Método Pago</th>
+          <th style={{ padding: "10px" }}>Proveedor</th>
+          <th style={{ padding: "10px", textAlign: "right" }}>Monto</th>
+          <th style={{ padding: "10px" }}>Centro Costo</th>
+          <th style={{ padding: "10px" }}>Presupuesto</th>
+        </tr>
+      </thead>
+      <tbody>
+        {gastos.map((g) => (
+          <tr key={g.id} style={{ borderBottom: "1px solid #ccc" }}>
+            <td style={{ padding: "10px" }}>{formatDate(g.fecha)}</td>
+            <td style={{ padding: "10px" }}>{g.descripcion}</td>
+            <td style={{ padding: "10px" }}>{g.categoria}</td>
+            <td style={{ padding: "10px" }}>{g.metodo_pago}</td>
+            <td style={{ padding: "10px" }}>
+              {proveedores.find(p => p.id === g.proveedor_id)?.nombre || "N/A"}
+            </td>
+            <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(g.monto)}</td>
+            <td style={{ padding: "10px" }}>
+              {centrosCostos.find(cc => cc.id === g.centro_costo_id)?.nombre || "N/A"}
+            </td>
+            <td style={{ padding: "10px" }}>
+              {presupuestos.find(p => p.id === g.presupuesto_id)?.nombre || "N/A"}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
 
       {/* Formulario de Recibos */}
       <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
