@@ -313,75 +313,167 @@ const handleMoneyBlur = (fieldName) => (e) => {
     return new Date(dateString).toLocaleDateString('es-ES');
   };
 
-  // Función para exportar a PDF
-  const downloadPDF = async () => {
-    setIsGeneratingPDF(true);
-    
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const element = pdfRef.current;
-      
-      const originalStyles = {
-        width: element.style.width,
-        height: element.style.height,
-        padding: element.style.padding,
-        margin: element.style.margin,
-      };
+   const downloadPDF = async () => {
+  setIsGeneratingPDF(true);
 
-      element.style.width = "297mm";
-      element.style.padding = "15mm";
-      element.style.margin = "0";
-      element.style.overflow = "hidden";
+  try {
+    // Crear un contenedor temporal para el PDF con un ancho mayor
+    const pdfElement = document.createElement("div");
+    pdfElement.style.width = "297mm"; // Usar tamaño A4 horizontal
+    pdfElement.style.padding = "15px";
+    pdfElement.style.background = "white";
+    pdfElement.style.color = "black";
+    pdfElement.style.fontFamily = "Arial, sans-serif";
+    pdfElement.style.fontSize = "10px"; // Reducir tamaño de fuente para más espacio
 
-      const options = {
-        scale: 1,
-        useCORS: true,
-        allowTaint: true,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
-        onclone: (clonedDoc) => {
-          clonedDoc.body.style.overflow = "hidden";
-        }
-      };
+    // Estilos mejorados para las tablas
+    const tableStyle = `
+      style="
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 15px;
+        page-break-inside: avoid;
+      "
+    `;
+    const thStyle = `
+      style="
+        padding: 6px;
+        border: 1px solid #ddd;
+        background-color: #f2f2f2;
+        text-align: left;
+        font-size: 9px;
+        white-space: nowrap;
+      "
+    `;
+    const tdStyle = `
+      style="
+        padding: 6px;
+        border: 1px solid #ddd;
+        font-size: 9px;
+        word-break: break-word;
+      "
+    `;
+    const tdRight = `
+      style="
+        padding: 6px;
+        border: 1px solid #ddd;
+        text-align: right;
+        font-size: 9px;
+      "
+    `;
 
-      const canvas = await html2canvas(element, options);
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgRatio = canvas.height / canvas.width;
-      const pdfRatio = pageHeight / pageWidth;
-      let imgWidth, imgHeight;
+    // Función para crear una tabla de datos con paginación
+    const createTableHTML = (title, headers, rows) => {
+      return `
+        <h2 style="border-bottom: 1px solid #ddd; padding-bottom: 5px; font-size: 12px; margin-top: 20px;">${title}</h2>
+        <table ${tableStyle}>
+          <thead>
+            <tr>
+              ${headers.map(header => `<th ${thStyle}>${header}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      `;
+    };
 
-      if (imgRatio > pdfRatio) {
-        imgHeight = pageHeight - 20;
-        imgWidth = imgHeight / imgRatio;
-      } else {
-        imgWidth = pageWidth - 20;
-        imgHeight = imgWidth * imgRatio;
-      }
+    // Tabla de Ingresos
+    const ingresosHeaders = ['N° Recibo', 'Fecha', 'Cliente', 'Valor Recibido', 'Saldo Anterior', 'Saldo en Caja', 'Total Ingresos', 'Banco', 'Cuenta'];
+    const ingresosRows = ingresos.map(i => `
+      <tr>
+        <td ${tdStyle}>${i.numero_recibo || 'N/A'}</td>
+        <td ${tdStyle}>${formatDate(i.fecha)}</td>
+        <td ${tdStyle}>${clientes.find(c => c.id === i.cliente_id)?.nombre || 'Sin cliente'}</td>
+        <td ${tdRight}>${formatCurrency(i.valor_recibido)}</td>
+        <td ${tdRight}>${formatCurrency(i.saldo_anterior)}</td>
+        <td ${tdRight}>${formatCurrency(i.saldo_en_caja)}</td>
+        <td ${tdRight}>${formatCurrency(i.total_ingresos)}</td>
+        <td ${tdStyle}>${bancos.find(b => b.id === i.banco_id)?.nombre || 'N/A'}</td>
+        <td ${tdStyle}>${cuentas.find(c => c.id === i.cuenta_id)?.numero_cuenta || 'N/A'}</td>
+      </tr>
+    `).join('');
 
-      const x = (pageWidth - imgWidth) / 2;
-      const y = (pageHeight - imgHeight) / 2;
+    // Tabla de Gastos
+    const gastosHeaders = ['Fecha', 'Descripción', 'Categoría', 'Método Pago', 'Monto', 'Proveedor', 'Centro Costo', 'Presupuesto'];
+    const gastosRows = gastos.map(g => `
+      <tr>
+        <td ${tdStyle}>${formatDate(g.fecha)}</td>
+        <td ${tdStyle}>${g.descripcion}</td>
+        <td ${tdStyle}>${g.categoria}</td>
+        <td ${tdStyle}>${g.metodo_pago}</td>
+        <td ${tdRight}>${formatCurrency(g.monto)}</td>
+        <td ${tdStyle}>${proveedores.find(p => p.id === g.proveedor_id)?.nombre || 'N/A'}</td>
+        <td ${tdStyle}>${centrosCostos.find(cc => cc.id === g.centro_costo_id)?.nombre || 'N/A'}</td>
+        <td ${tdStyle}>${presupuestos.find(p => p.id === g.presupuesto_id)?.nombre || 'N/A'}</td>
+      </tr>
+    `).join('');
 
-      pdf.addImage(canvas, 'PNG', x, y, imgWidth, imgHeight);
-      
-      element.style.width = originalStyles.width;
-      element.style.height = originalStyles.height;
-      element.style.padding = originalStyles.padding;
-      element.style.margin = originalStyles.margin;
+    // Tabla de Recibos
+    const recibosHeaders = ['ID', 'Fecha', 'Ingreso', 'Monto Ingreso', 'Gasto', 'Monto Gasto', 'Monto Recibo'];
+    const recibosRows = recibos.map(r => {
+      const ingreso = ingresos.find(i => i.id === r.ingreso_id);
+      const gasto = gastos.find(g => g.id === r.gasto_id);
+      return `
+        <tr>
+          <td ${tdStyle}>${r.id}</td>
+          <td ${tdStyle}>${formatDate(r.fecha)}</td>
+          <td ${tdStyle}>${ingreso ? `Recibo #${ingreso.numero_recibo}` : `ID ${r.ingreso_id}`}</td>
+          <td ${tdRight}>${ingreso ? formatCurrency(ingreso.valor_recibido) : 'N/A'}</td>
+          <td ${tdStyle}>${gasto ? gasto.descripcion : `ID ${r.gasto_id}`}</td>
+          <td ${tdRight}>${gasto ? formatCurrency(gasto.monto) : 'N/A'}</td>
+          <td ${tdRight}>${formatCurrency(r.monto)}</td>
+        </tr>
+      `;
+    }).join('');
 
-      pdf.save('reporte_financiero.pdf');
-      
-    } catch (error) {
-      console.error("Error al generar PDF:", error);
-      alert("Error al generar el PDF. Por favor intente nuevamente.");
-    } finally {
-      setIsGeneratingPDF(false);
+    // Construir el contenido HTML completo
+    pdfElement.innerHTML = `
+      <h1 style="text-align: center; margin-bottom: 15px; font-size: 16px;">Reporte Financiero Completo</h1>
+      ${createTableHTML("Ingresos", ingresosHeaders, ingresosRows)}
+      ${createTableHTML("Gastos", gastosHeaders, gastosRows)}
+      ${createTableHTML("Recibos", recibosHeaders, recibosRows)}
+    `;
+
+    document.body.appendChild(pdfElement);
+
+    // Configuración para html2canvas
+    const canvas = await html2canvas(pdfElement, {
+      scale: 1,
+      logging: false,
+      useCORS: true,
+      width: pdfElement.offsetWidth,
+      height: pdfElement.scrollHeight,
+      windowWidth: pdfElement.scrollWidth,
+      windowHeight: pdfElement.scrollHeight
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("l", "mm", "a4"); // Orientación horizontal
+    const imgWidth = 297; // Ancho de A4 en mm (horizontal)
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+    document.body.removeChild(pdfElement);
+
+    // Agregar paginación si es necesario
+    const totalPages = pdf.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i);
+      pdf.setFontSize(8);
+      pdf.text(`Página ${i} de ${totalPages}`, imgWidth - 20, imgHeight - 10);
     }
-  };
+
+    pdf.save("reporte_financiero_completo.pdf");
+
+  } catch (error) {
+    console.error("Error al generar PDF:", error);
+    alert("Error al generar el PDF. Por favor intente nuevamente.");
+  } finally {
+    setIsGeneratingPDF(false);
+  }
+};
 
   // Función para exportar a Excel
   const downloadExcel = async () => {
