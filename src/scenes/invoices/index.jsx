@@ -317,6 +317,220 @@ const handleMoneyBlur = (fieldName) => (e) => {
     return new Date(dateString).toLocaleDateString('es-ES');
   };
 
+
+  // Estados para edición
+const [editingRecibo, setEditingRecibo] = useState(null);
+const [editingIngreso, setEditingIngreso] = useState(null);
+const [editingGasto, setEditingGasto] = useState(null);
+
+// Funciones para editar registros
+const handleEditRecibo = (recibo) => {
+  setEditingRecibo(recibo);
+  setNuevoRecibo({
+    ingreso_id: recibo.ingreso_id,
+    gasto_id: recibo.gasto_id,
+    fecha: recibo.fecha,
+    monto: formatCurrency(recibo.monto)
+  });
+};
+
+const handleEditIngreso = (ingreso) => {
+  setEditingIngreso(ingreso);
+  setNuevoIngreso({
+    cliente_id: ingreso.cliente_id,
+    fecha: ingreso.fecha,
+    valor_recibido: formatCurrency(ingreso.valor_recibido),
+    banco_id: ingreso.banco_id,
+    cuenta_id: ingreso.cuenta_id,
+    numero_recibo: ingreso.numero_recibo,
+    saldo_anterior: formatCurrency(ingreso.saldo_anterior),
+    saldo_en_caja: formatCurrency(ingreso.saldo_en_caja),
+    total_ingresos: formatCurrency(ingreso.total_ingresos)
+  });
+};
+
+const handleEditGasto = (gasto) => {
+  setEditingGasto(gasto);
+  setNuevoGasto({
+    fecha: gasto.fecha,
+    descripcion: gasto.descripcion,
+    monto: formatCurrency(gasto.monto),
+    categoria: gasto.categoria,
+    metodo_pago: gasto.metodo_pago,
+    banco_id: gasto.banco_id,
+    cuenta_id: gasto.cuenta_id,
+    proveedor_id: gasto.proveedor_id,
+    centro_costo_id: gasto.centro_costo_id,
+    presupuesto_id: gasto.presupuesto_id
+  });
+};
+
+// Funciones para actualizar registros
+const actualizarRecibo = async (e) => {
+  e.preventDefault();
+  try {
+    const datos = {
+      ...nuevoRecibo,
+      monto: cleanMoneyValue(nuevoRecibo.monto)
+    };
+
+    const { data } = await axios.put(`http://localhost:5000/api/recibos/${editingRecibo.id}`, datos);
+    setRecibos(recibos.map(r => r.id === editingRecibo.id ? data : r));
+    setEditingRecibo(null);
+    setNuevoRecibo({
+      ingreso_id: "",
+      gasto_id: "",
+      fecha: new Date().toISOString().split('T')[0],
+      monto: ""
+    });
+  } catch (error) {
+    console.error("Error al actualizar recibo:", error);
+    alert(error.response?.data?.message || "Error al actualizar recibo");
+  }
+};
+
+const actualizarIngreso = async (e) => {
+  e.preventDefault();
+  try {
+    const datos = {
+      ...nuevoIngreso,
+      valor_recibido: cleanMoneyValue(nuevoIngreso.valor_recibido),
+      saldo_anterior: cleanMoneyValue(nuevoIngreso.saldo_anterior),
+      saldo_en_caja: cleanMoneyValue(nuevoIngreso.saldo_en_caja),
+      total_ingresos: cleanMoneyValue(nuevoIngreso.total_ingresos),
+      cliente_id: nuevoIngreso.cliente_id || null,
+      banco_id: nuevoIngreso.banco_id || null,
+      cuenta_id: nuevoIngreso.cuenta_id || null
+    };
+
+    const { data } = await axios.put(`http://localhost:5000/api/ingresos/${editingIngreso.id}`, datos);
+    setIngresos(ingresos.map(i => i.id === editingIngreso.id ? data : i));
+    setEditingIngreso(null);
+    setNuevoIngreso({
+      cliente_id: "",
+      fecha: new Date().toISOString().split('T')[0],
+      valor_recibido: "",
+      banco_id: "",
+      cuenta_id: "",
+      numero_recibo: "",
+      saldo_anterior: "",
+      saldo_en_caja: "",
+      total_ingresos: ""
+    });
+  } catch (error) {
+    console.error("Error al actualizar ingreso:", error);
+    alert(error.response?.data?.message || "Error al actualizar ingreso");
+  }
+};
+
+const actualizarGasto = async (e) => {
+  e.preventDefault();
+  try {
+    const datos = {
+      ...nuevoGasto,
+      monto: cleanMoneyValue(nuevoGasto.monto),
+      banco_id: nuevoGasto.banco_id || null,
+      cuenta_id: nuevoGasto.cuenta_id || null,
+      proveedor_id: nuevoGasto.proveedor_id || null,
+      centro_costo_id: nuevoGasto.centro_costo_id || null,
+      presupuesto_id: nuevoGasto.presupuesto_id || null
+    };
+
+    const { data } = await axios.put(`http://localhost:5000/api/gastos/${editingGasto.id}`, datos);
+    setGastos(gastos.map(g => g.id === editingGasto.id ? data : g));
+    setEditingGasto(null);
+    setNuevoGasto({
+      fecha: new Date().toISOString().split('T')[0],
+      descripcion: "",
+      monto: "",
+      categoria: "",
+      metodo_pago: "Efectivo",
+      banco_id: "",
+      cuenta_id: "",
+      proveedor_id: "",
+      centro_costo_id: "",
+      presupuesto_id: ""
+    });
+  } catch (error) {
+    console.error("Error al actualizar gasto:", error);
+    alert(error.response?.data?.message || "Error al actualizar gasto");
+  }
+};
+
+
+// Funciones para eliminar registros
+const eliminarRecibo = async (id) => {
+  if (window.confirm("¿Estás seguro de que deseas eliminar este recibo?")) {
+    try {
+      await axios.delete(`http://localhost:5000/api/recibos/${id}`);
+      setRecibos(recibos.filter(r => r.id !== id));
+    } catch (error) {
+      console.error("Error al eliminar recibo:", error);
+      alert(error.response?.data?.message || "Error al eliminar recibo");
+    }
+  }
+};
+
+const eliminarIngreso = async (id) => {
+  if (window.confirm("¿Estás seguro de que deseas eliminar este ingreso?")) {
+    try {
+      await axios.delete(`http://localhost:5000/api/ingresos/${id}`);
+      setIngresos(ingresos.filter(i => i.id !== id));
+    } catch (error) {
+      console.error("Error al eliminar ingreso:", error);
+      alert(error.response?.data?.message || "Error al eliminar ingreso");
+    }
+  }
+};
+
+const eliminarGasto = async (id) => {
+  if (window.confirm("¿Estás seguro de que deseas eliminar este gasto?")) {
+    try {
+      await axios.delete(`http://localhost:5000/api/gastos/${id}`);
+      setGastos(gastos.filter(g => g.id !== id));
+    } catch (error) {
+      console.error("Error al eliminar gasto:", error);
+      alert(error.response?.data?.message || "Error al eliminar gasto");
+    }
+  }
+};
+
+// Cancelar edición
+const cancelarEdicion = () => {
+  setEditingRecibo(null);
+  setEditingIngreso(null);
+  setEditingGasto(null);
+  setNuevoRecibo({
+    ingreso_id: "",
+    gasto_id: "",
+    fecha: new Date().toISOString().split('T')[0],
+    monto: ""
+  });
+  setNuevoIngreso({
+    cliente_id: "",
+    fecha: new Date().toISOString().split('T')[0],
+    valor_recibido: "",
+    banco_id: "",
+    cuenta_id: "",
+    numero_recibo: "",
+    saldo_anterior: "",
+    saldo_en_caja: "",
+    total_ingresos: ""
+  });
+  setNuevoGasto({
+    fecha: new Date().toISOString().split('T')[0],
+    descripcion: "",
+    monto: "",
+    categoria: "",
+    metodo_pago: "Efectivo",
+    banco_id: "",
+    cuenta_id: "",
+    proveedor_id: "",
+    centro_costo_id: "",
+    presupuesto_id: ""
+  });
+};
+
    const downloadPDF = async () => {
   setIsGeneratingPDF(true);
 
@@ -597,7 +811,7 @@ const handleMoneyBlur = (fieldName) => (e) => {
       {/* Formulario de Ingresos */}
       <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
         <h2>Registrar Ingreso</h2>
-        <form onSubmit={crearIngreso}>
+        <form onSubmit={editingIngreso ? actualizarIngreso : crearIngreso}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
             <div>
               <label>Cliente:</label>
@@ -719,52 +933,84 @@ const handleMoneyBlur = (fieldName) => (e) => {
       </div>
 
       {/* Lista de Ingresos - Versión Modificada */}
-<div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
-  <h2>Lista de Ingresos</h2>
-  <div style={{ overflowX: "auto" }}>
-    <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "800px" }}>
-      <thead>
-        <tr style={{ backgroundColor: "#2c2c2e", color: "#fff", textAlign: "left" }}>
-          <th style={{ padding: "10px" }}>N° Recibo</th>
-          <th style={{ padding: "10px" }}>Fecha</th>
-          <th style={{ padding: "10px" }}>Cliente</th>
-          <th style={{ padding: "10px", textAlign: "right" }}>Valor Recibido</th>
-          <th style={{ padding: "10px", textAlign: "right" }}>Saldo Anterior</th>
-          <th style={{ padding: "10px", textAlign: "right" }}>Saldo en Caja</th>
-          <th style={{ padding: "10px", textAlign: "right" }}>Total Ingresos</th>
-          <th style={{ padding: "10px" }}>Banco</th>
-          <th style={{ padding: "10px" }}>Cuenta</th>
-        </tr>
-      </thead>
-      <tbody>
-        {ingresos.map((i) => (
-          <tr key={i.id} style={{ borderBottom: "1px solid #ccc" }}>
-            <td style={{ padding: "10px" }}>{i.numero_recibo}</td>
-            <td style={{ padding: "10px" }}>{formatDate(i.fecha)}</td>
-            <td style={{ padding: "10px" }}>
-              {clientes.find(c => c.id === i.cliente_id)?.nombre || "Sin cliente"}
-            </td>
-            <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.valor_recibido)}</td>
-            <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.saldo_anterior)}</td>
-            <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.saldo_en_caja)}</td>
-            <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.total_ingresos)}</td>
-            <td style={{ padding: "10px" }}>
-              {bancos.find(b => b.id === i.banco_id)?.nombre || "N/A"}
-            </td>
-            <td style={{ padding: "10px" }}>
-              {cuentas.find(c => c.id === i.cuenta_id)?.numero_cuenta || "N/A"}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-</div>
+
+ {/* Lista de Ingresos con Acciones */}
+        <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
+          <h2>Lista de Ingresos</h2>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "900px" }}>
+              <thead>
+                <tr style={{ backgroundColor: "#2c2c2e", color: "#fff", textAlign: "left" }}>
+                  <th style={{ padding: "10px" }}>N° Recibo</th>
+                  <th style={{ padding: "10px" }}>Fecha</th>
+                  <th style={{ padding: "10px" }}>Cliente</th>
+                  <th style={{ padding: "10px", textAlign: "right" }}>Valor Recibido</th>
+                  <th style={{ padding: "10px", textAlign: "right" }}>Saldo Anterior</th>
+                  <th style={{ padding: "10px", textAlign: "right" }}>Saldo en Caja</th>
+                  <th style={{ padding: "10px", textAlign: "right" }}>Total Ingresos</th>
+                  <th style={{ padding: "10px" }}>Banco</th>
+                  <th style={{ padding: "10px" }}>Cuenta</th>
+                  <th style={{ padding: "10px" }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ingresos.map((i) => (
+                  <tr key={i.id} style={{ borderBottom: "1px solid #ccc" }}>
+                    <td style={{ padding: "10px" }}>{i.numero_recibo || 'N/A'}</td>
+                    <td style={{ padding: "10px" }}>{formatDate(i.fecha)}</td>
+                    <td style={{ padding: "10px" }}>
+                      {clientes.find(c => c.id === i.cliente_id)?.nombre || "Sin cliente"}
+                    </td>
+                    <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.valor_recibido)}</td>
+                    <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.saldo_anterior)}</td>
+                    <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.saldo_en_caja)}</td>
+                    <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.total_ingresos)}</td>
+                    <td style={{ padding: "10px" }}>
+                      {bancos.find(b => b.id === i.banco_id)?.nombre || "N/A"}
+                    </td>
+                    <td style={{ padding: "10px" }}>
+                      {cuentas.find(c => c.id === i.cuenta_id)?.numero_cuenta || "N/A"}
+                    </td>
+                    <td style={{ padding: "10px", whiteSpace: "nowrap" }}>
+                      <button 
+                        onClick={() => handleEditIngreso(i)}
+                        style={{ 
+                          marginRight: "5px",
+                          padding: "5px 10px",
+                          backgroundColor: "#4CAF50",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "3px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        Editar
+                      </button>
+                      <button 
+                        onClick={() => eliminarIngreso(i.id)}
+                        style={{ 
+                          padding: "5px 10px",
+                          backgroundColor: "#f44336",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "3px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
       {/* Formulario de Gastos */}
       <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
         <h2>Registrar Gasto</h2>
-        <form onSubmit={crearGasto}>
+        <form onSubmit={editingGasto ? actualizarGasto : crearGasto}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
             <div>
               <label>Fecha:</label>
@@ -909,6 +1155,7 @@ const handleMoneyBlur = (fieldName) => (e) => {
       </div>
 
       {/* Lista de Gastos - Versión Modificada */}
+{/* Lista de Gastos - Versión Modificada con Acciones */}
 <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
   <h2>Lista de Gastos</h2>
   <div style={{ overflowX: "auto" }}>
@@ -923,6 +1170,7 @@ const handleMoneyBlur = (fieldName) => (e) => {
           <th style={{ padding: "10px", textAlign: "right" }}>Monto</th>
           <th style={{ padding: "10px" }}>Centro Costo</th>
           <th style={{ padding: "10px" }}>Presupuesto</th>
+          <th style={{ padding: "10px" }}>Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -942,6 +1190,35 @@ const handleMoneyBlur = (fieldName) => (e) => {
             <td style={{ padding: "10px" }}>
               {presupuestos.find(p => p.id === g.presupuesto_id)?.nombre || "N/A"}
             </td>
+            <td style={{ padding: "10px", whiteSpace: "nowrap" }}>
+              <button 
+                onClick={() => handleEditGasto(g)}
+                style={{ 
+                  marginRight: "5px",
+                  padding: "5px 10px",
+                  backgroundColor: "#4CAF50",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "3px",
+                  cursor: "pointer"
+                }}
+              >
+                Editar
+              </button>
+              <button 
+                onClick={() => eliminarGasto(g.id)}
+                style={{ 
+                  padding: "5px 10px",
+                  backgroundColor: "#f44336",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "3px",
+                  cursor: "pointer"
+                }}
+              >
+                Eliminar
+              </button>
+            </td>
           </tr>
         ))}
       </tbody>
@@ -951,7 +1228,7 @@ const handleMoneyBlur = (fieldName) => (e) => {
       {/* Formulario de Recibos */}
       <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
         <h2>Crear Recibo</h2>
-        <form onSubmit={crearRecibo}>
+        <form onSubmit={editingRecibo ? actualizarRecibo : crearRecibo}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
             <div>
               <label>Ingreso:</label>
@@ -1019,42 +1296,73 @@ const handleMoneyBlur = (fieldName) => (e) => {
       </div>
 
       {/* Tabla de Recibos */}
-      <div>
-        <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Lista de Recibos</h2>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "600px" }}>
-            <thead>
-              <tr style={{ backgroundColor: "#2c2c2e", color: "#fff", textAlign: "left" }}>
-                <th style={{ padding: "10px" }}>ID</th>
-                <th style={{ padding: "10px" }}>Fecha</th>
-                <th style={{ padding: "10px" }}>Ingreso</th>
-                <th style={{ padding: "10px" }}>Gasto</th>
-                <th style={{ padding: "10px", textAlign: "right" }}>Monto</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recibos.map((r) => {
-                const ingreso = ingresos.find(i => i.id === r.ingreso_id);
-                const gasto = gastos.find(g => g.id === r.gasto_id);
-                
-                return (
-                  <tr key={r.id} style={{ borderBottom: "1px solid #ccc" }}>
-                    <td style={{ padding: "10px" }}>{r.id}</td>
-                    <td style={{ padding: "10px" }}>{formatDate(r.fecha)}</td>
-                    <td style={{ padding: "10px" }}>
-                      {ingreso ? `Recibo #${ingreso.numero_recibo} - ${formatCurrency(ingreso.valor_recibido)}` : `Ingreso ${r.ingreso_id}`}
-                    </td>
-                    <td style={{ padding: "10px" }}>
-                      {gasto ? `${gasto.descripcion} - ${formatCurrency(gasto.monto)}` : `Gasto ${r.gasto_id}`}
-                    </td>
-                    <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(r.monto)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+     
+        <div>
+          <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Lista de Recibos</h2>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "700px" }}>
+              <thead>
+                <tr style={{ backgroundColor: "#2c2c2e", color: "#fff", textAlign: "left" }}>
+                  <th style={{ padding: "10px" }}>ID</th>
+                  <th style={{ padding: "10px" }}>Fecha</th>
+                  <th style={{ padding: "10px" }}>Ingreso</th>
+                  <th style={{ padding: "10px" }}>Gasto</th>
+                  <th style={{ padding: "10px", textAlign: "right" }}>Monto</th>
+                  <th style={{ padding: "10px" }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recibos.map((r) => {
+                  const ingreso = ingresos.find(i => i.id === r.ingreso_id);
+                  const gasto = gastos.find(g => g.id === r.gasto_id);
+                  
+                  return (
+                    <tr key={r.id} style={{ borderBottom: "1px solid #ccc" }}>
+                      <td style={{ padding: "10px" }}>{r.id}</td>
+                      <td style={{ padding: "10px" }}>{formatDate(r.fecha)}</td>
+                      <td style={{ padding: "10px" }}>
+                        {ingreso ? `Recibo #${ingreso.numero_recibo} - ${formatCurrency(ingreso.valor_recibido)}` : `Ingreso ${r.ingreso_id}`}
+                      </td>
+                      <td style={{ padding: "10px" }}>
+                        {gasto ? `${gasto.descripcion} - ${formatCurrency(gasto.monto)}` : `Gasto ${r.gasto_id}`}
+                      </td>
+                      <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(r.monto)}</td>
+                      <td style={{ padding: "10px", whiteSpace: "nowrap" }}>
+                        <button 
+                          onClick={() => handleEditRecibo(r)}
+                          style={{ 
+                            marginRight: "5px",
+                            padding: "5px 10px",
+                            backgroundColor: "#4CAF50",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "3px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          Editar
+                        </button>
+                        <button 
+                          onClick={() => eliminarRecibo(r.id)}
+                          style={{ 
+                            padding: "5px 10px",
+                            backgroundColor: "#f44336",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "3px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
     </div>
   );
 };
