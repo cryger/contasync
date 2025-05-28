@@ -12,6 +12,7 @@ import Employees from "./employees";
 import Cuenta from "./cuenta";
 import Costcenter from "./costcenter";
 import Budget from "./budget";
+import Balances from "./balances";
 import Form from "./form";
 import Calendar from "./calendar";
 import Bar from "./bar";
@@ -36,6 +37,7 @@ export {
   Cuenta,
   Costcenter,
   Budget,
+  Balances,
   Form,
   Calendar,
   Bar,

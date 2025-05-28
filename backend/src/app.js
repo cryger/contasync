@@ -14,6 +14,7 @@ const empleadosRouter = require('./routes/empleados');
 const cuentasRoutes = require('./routes/cuentas');
 const centrosCostosRouter = require('./routes/centrosCostos');
 const presupuestosRouter = require('./routes/presupuestos');
+const balanceRoutes = require('./routes/balanceRoutes'); // Nueva ruta
 const app = express();
 
 // Configuración básica de middleware
@@ -42,6 +43,7 @@ app.use('/api/empleados', empleadosRouter);
 app.use('/api/cuentas', cuentasRoutes);
 app.use('/api/centros-costos', centrosCostosRouter);
 app.use('/api/presupuestos', presupuestosRouter);
+app.use('/api/balances', balanceRoutes);
 
 // Manejador de rutas no encontradas
 app.use((req, res) => {

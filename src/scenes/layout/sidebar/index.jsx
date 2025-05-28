@@ -30,7 +30,9 @@ import {
   AccountBalance,
   AccountBalanceWalletOutlined,
   BusinessCenterOutlined,
+  BadgeOutlined,
   RequestQuoteOutlined,
+  LibraryBooksOutlined
 
 } from "@mui/icons-material";
 import avatar from "../../../assets/images/avatar.png";
@@ -183,7 +185,7 @@ const SideBar = () => {
             title="Empleados"
             path="/employees"
             colors={colors}
-            icon={<PeopleAltOutlined/>}
+            icon={<BadgeOutlined />}
           />
 
           <Item
@@ -244,6 +246,13 @@ const SideBar = () => {
             path="/budget"
             colors={colors}
             icon={<RequestQuoteOutlined />}
+          />
+
+            <Item
+            title="Balances"
+            path="/balances"
+            colors={colors}
+            icon={<LibraryBooksOutlined />}
           />
         </Menu>
 
