@@ -29,6 +29,7 @@
     "@nivo/line": "^0.88.0",
     "@nivo/pie": "^0.88.0",
     "@nivo/stream": "^0.88.0",
+    "admin-dashboard": "file:",
     "axios": "^1.9.0",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
