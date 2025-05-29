@@ -13,6 +13,7 @@ import Cuenta from "./cuenta";
 import Costcenter from "./costcenter";
 import Budget from "./budget";
 import Balances from "./balances";
+import Finances from "./finances";
 import Form from "./form";
 import Calendar from "./calendar";
 import Bar from "./bar";
@@ -38,6 +39,7 @@ export {
   Costcenter,
   Budget,
   Balances,
+  Finances,
   Form,
   Calendar,
   Bar,

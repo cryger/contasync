@@ -32,7 +32,8 @@ import {
   BusinessCenterOutlined,
   BadgeOutlined,
   RequestQuoteOutlined,
-  LibraryBooksOutlined
+  LibraryBooksOutlined,
+  AssessmentOutlined
 
 } from "@mui/icons-material";
 import avatar from "../../../assets/images/avatar.png";
@@ -254,6 +255,15 @@ const SideBar = () => {
             colors={colors}
             icon={<LibraryBooksOutlined />}
           />
+
+          <Item
+            title="Finanzas"
+            path="/finances"
+            colors={colors}
+            icon={<AssessmentOutlined />}
+          />
+
+         
         </Menu>
 
         <Typography

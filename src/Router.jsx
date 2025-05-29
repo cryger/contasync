@@ -23,6 +23,8 @@ import {
   Stream,
   Budget,
   Balances,
+  Finances,
+
  
   } from "./scenes";
 
@@ -44,6 +46,7 @@ const AppRouter = () => {
           <Route path="/costcenter" element={<Costcenter/>} />
           <Route path="/budget" element={<Budget/>} />
           <Route path="/balances" element={<Balances/>} />
+          <Route path="/finances" element={<Finances/>} />
           <Route path="/form" element={<Form />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/bar" element={<Bar />} />
