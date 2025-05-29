@@ -5,7 +5,14 @@ import {
   Dashboard,
   Team,
   Invoices,
+  Projects,
   Contacts,
+  Suppliers,
+  Investments,
+  Banks,
+  Employees,
+  Cuenta,
+  Costcenter,
   Form,
   Bar,
   Line,
@@ -14,7 +21,12 @@ import {
   Geography,
   Calendar,
   Stream,
-} from "./scenes";
+  Budget,
+  Balances,
+  Finances,
+
+ 
+  } from "./scenes";
 
 const AppRouter = () => {
   return (
@@ -25,6 +37,16 @@ const AppRouter = () => {
           <Route path="/team" element={<Team />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/invoices" element={<Invoices />} />
+          <Route path="/projects" element={<Projects />} />
+          <Route path="/suppliers" element={<Suppliers />} />
+          <Route path="/investments" element={<Investments />} />
+          <Route path="/banks" element={<Banks/>} />
+          <Route path="/employees" element={<Employees/>} />
+          <Route path="/cuenta" element={<Cuenta/>} />
+          <Route path="/costcenter" element={<Costcenter/>} />
+          <Route path="/budget" element={<Budget/>} />
+          <Route path="/balances" element={<Balances/>} />
+          <Route path="/finances" element={<Finances/>} />
           <Route path="/form" element={<Form />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/bar" element={<Bar />} />

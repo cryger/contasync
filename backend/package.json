@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "description": "",
+  "proxy": "http://localhost:5000",
   "dependencies": {
     "@mui/icons-material": "^7.0.0",
     "backend": "file:",

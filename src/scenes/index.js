@@ -4,6 +4,16 @@ import Dashboard from "./dashboard";
 import Team from "./team";
 import Invoices from "./invoices";
 import Contacts from "./contacts";
+import Projects from "./projects";
+import Suppliers from "./suppliers";
+import Investments from "./investments";
+import Banks from "./banks";
+import Employees from "./employees";
+import Cuenta from "./cuenta";
+import Costcenter from "./costcenter";
+import Budget from "./budget";
+import Balances from "./balances";
+import Finances from "./finances";
 import Form from "./form";
 import Calendar from "./calendar";
 import Bar from "./bar";
@@ -20,6 +30,16 @@ export {
   Team,
   Invoices,
   Contacts,
+  Projects,
+  Suppliers,
+  Investments,
+  Banks,
+  Employees,
+  Cuenta,
+  Costcenter,
+  Budget,
+  Balances,
+  Finances,
   Form,
   Calendar,
   Bar,

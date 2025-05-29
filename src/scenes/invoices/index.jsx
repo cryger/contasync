@@ -1,342 +1,1369 @@
-import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Typography,
-  useTheme,
-  Button,
-  Modal,
-  TextField,
-  FormControl,
-  IconButton,
-  CircularProgress,
-  Alert,
-  Snackbar
-} from "@mui/material";
-import { Header } from "../../components";
-import { DataGrid } from "@mui/x-data-grid";
-import { tokens } from "../../theme";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import AddIcon from "@mui/icons-material/Add";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 
 const Invoices = () => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
+  // Estados para los datos
+  const [recibos, setRecibos] = useState([]);
+  const [ingresos, setIngresos] = useState([]);
+  const [gastos, setGastos] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [bancos, setBancos] = useState([]);
+  const [cuentas, setCuentas] = useState([]);
+  const [proveedores, setProveedores] = useState([]);
+  const [centrosCostos, setCentrosCostos] = useState([]);
+  const [presupuestos, setPresupuestos] = useState([]);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isGeneratingExcel, setIsGeneratingExcel] = useState(false);
   
-  // Estados del componente
-  const [invoices, setInvoices] = useState([]);
-  const [openModal, setOpenModal] = useState(false);
-  const [currentInvoice, setCurrentInvoice] = useState({
-    id: null,
+  const pdfRef = useRef();
+
+  // Estados para los formularios
+  const [nuevoIngreso, setNuevoIngreso] = useState({
+    cliente_id: "",
+    fecha: new Date().toISOString().split('T')[0],
+    valor_recibido: "",
+    banco_id: "",
+    cuenta_id: "",
+    numero_recibo: "",
+    saldo_anterior: "",
+    saldo_en_caja: "",
+    total_ingresos: ""
+  });
+
+  const [nuevoGasto, setNuevoGasto] = useState({
+    fecha: new Date().toISOString().split('T')[0],
+    descripcion: "",
+    monto: "",
+    categoria: "",
+    metodo_pago: "Efectivo",
+    banco_id: "",
+    cuenta_id: "",
+    proveedor_id: "",
+    centro_costo_id: "",
+    presupuesto_id: ""
+  });
+
+  const [nuevoRecibo, setNuevoRecibo] = useState({
     ingreso_id: "",
     gasto_id: "",
     fecha: new Date().toISOString().split('T')[0],
     monto: ""
   });
-  const [isEdit, setIsEdit] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success"
-  });
 
-  // Configuración de la API
-  const API_URL = "http://localhost:5000/api/facturas"; // Ajusta esta URL
-
-  // Columnas para la DataGrid
-  const columns = [
-    { field: "id", headerName: "ID", width: 70 },
-    { field: "ingreso_id", headerName: "Ingreso ID", width: 100 },
-    { field: "gasto_id", headerName: "Gasto ID", width: 100 },
-    {
-      field: "fecha",
-      headerName: "Fecha",
-      width: 120,
-      valueFormatter: (params) => params.value ? new Date(params.value).toLocaleDateString() : ""
-    },
-    {
-      field: "monto",
-      headerName: "Monto",
-      width: 120,
-      renderCell: (params) => (
-        <Typography color={colors.greenAccent[500]}>
-          ${params.row.monto ? parseFloat(params.row.monto).toFixed(2) : "0.00"}
-        </Typography>
-      )
-    },
-    {
-      field: "actions",
-      headerName: "Acciones",
-      width: 120,
-      renderCell: (params) => (
-        <div>
-          <IconButton
-            onClick={() => handleEdit(params.row)}
-            sx={{ color: colors.blueAccent[400] }}
-          >
-            <EditIcon />
-          </IconButton>
-          <IconButton
-            onClick={() => handleDelete(params.row.id)}
-            sx={{ color: colors.redAccent[500] }}
-          >
-            <DeleteIcon />
-          </IconButton>
-        </div>
-      )
-    }
-  ];
-
-  // Efecto para cargar las facturas
+  // Obtener todos los datos necesarios
   useEffect(() => {
-    fetchInvoices();
-  }, []);
+    const fetchData = async () => {
+      try {
+        const [
+          recibosRes, 
+          ingresosRes, 
+          gastosRes,
+          clientesRes,
+          bancosRes,
+          cuentasRes,
+          proveedoresRes,
+          centrosCostosRes,
+          presupuestosRes
+        ] = await Promise.all([
+          axios.get("http://localhost:5000/api/recibos"),
+          axios.get("http://localhost:5000/api/ingresos"),
+          axios.get("http://localhost:5000/api/gastos"),
+          axios.get("http://localhost:5000/api/clientes"),
+          axios.get("http://localhost:5000/api/bancos"),
+          axios.get("http://localhost:5000/api/cuentas"),
+          axios.get("http://localhost:5000/api/proveedores"),
+          axios.get("http://localhost:5000/api/centros-costos"),
+          axios.get("http://localhost:5000/api/presupuestos")
+        ]);
 
-  const fetchInvoices = async () => {
+        setRecibos(recibosRes.data);
+        setIngresos(ingresosRes.data);
+        setGastos(gastosRes.data);
+        setClientes(clientesRes.data);
+        setBancos(bancosRes.data);
+        setCuentas(cuentasRes.data);
+        setProveedores(proveedoresRes.data);
+        setCentrosCostos(centrosCostosRes.data);
+        setPresupuestos(presupuestosRes.data);
+      } catch (error) {
+        console.error("Error al obtener datos:", error);
+      }
+    };
+    fetchData();
+  }, []);
+// Función para formatear moneda (versión mejorada)
+const formatCurrency = (value) => {
+  if (value === null || value === undefined || value === '') return "$ 0";
+  
+  // Si el valor ya está formateado, lo devolvemos tal cual
+  if (typeof value === 'string' && value.includes('$')) {
+    return value;
+  }
+  
+  // Convertimos a número
+  const number = typeof value === 'number' ? value : 
+    parseFloat(value.toString().replace(/[^\d.-]/g, ""));
+  
+  return isNaN(number) 
+    ? "$ 0" 
+    : `$ ${number.toLocaleString("es-CO", { 
+        minimumFractionDigits: 0, 
+        maximumFractionDigits: 0 
+      })}`;
+};
+
+// Función para limpiar el formato de moneda y obtener el valor numérico
+const cleanMoneyValue = (value) => {
+  if (!value) return 0;
+  
+  // Si ya es un número, lo devolvemos directamente
+  if (typeof value === 'number') return value;
+  
+  // Si es un string con formato de moneda, lo limpiamos
+  const cleaned = value.toString()
+    .replace(/\$\s?/g, '')  // Elimina el símbolo $
+    .replace(/\./g, '')     // Elimina los puntos de mil
+    .replace(',', '.');     // Reemplaza comas por puntos para decimales
+  
+  const number = parseFloat(cleaned);
+  return isNaN(number) ? 0 : number;
+};
+
+// Función para manejar el cambio en campos monetarios (mejorada)
+const handleMoneyChange = (fieldName) => (e) => {
+  const rawValue = e.target.value;
+  
+  // Permitimos solo números, puntos y comas
+  const filteredValue = rawValue
+    .replace(/[^\d.,]/g, '')  // Solo permite dígitos, puntos y comas
+    .replace(/(\..*)\./g, '$1') // Evita múltiples puntos decimales
+    .replace(/(,.*),/g, '$1'); // Evita múltiples comas
+  
+  setNuevoIngreso(prev => ({
+    ...prev,
+    [fieldName]: filteredValue
+  }));
+};
+
+// Función para formatear los campos monetarios cuando pierden el foco
+const handleMoneyBlur = (fieldName) => (e) => {
+  const value = e.target.value;
+  const numericValue = cleanMoneyValue(value);
+  
+  setNuevoIngreso(prev => ({
+    ...prev,
+    [fieldName]: formatCurrency(numericValue)
+  }));
+  
+  // Recalculamos los totales
+  calcularTotalesIngreso();
+};
+
+  // Calcular totales para ingresos (versión mejorada)
+  const calcularTotalesIngreso = () => {
+    const valorRecibido = cleanMoneyValue(nuevoIngreso.valor_recibido);
+    const saldoAnterior = cleanMoneyValue(nuevoIngreso.saldo_anterior);
+    const saldoEnCaja = valorRecibido + saldoAnterior;
+    
+    setNuevoIngreso(prev => ({
+      ...prev,
+      saldo_en_caja: formatCurrency(saldoEnCaja),
+      total_ingresos: formatCurrency(saldoEnCaja)
+    }));
+  };
+
+  // Manejador de cambios para campos no monetarios
+  const handleChange = (setState, state) => (e) => {
+    const { name, value } = e.target;
+    setState({ ...state, [name]: value });
+  };
+
+  // Crear nuevo ingreso
+  const crearIngreso = async (e) => {
+    e.preventDefault();
     try {
-      setLoading(true);
-      const response = await axios.get(API_URL);
-      setInvoices(response.data);
-    } catch (err) {
-      setError("Error al cargar facturas");
-      console.error("Error fetching invoices:", err);
-    } finally {
-      setLoading(false);
+      const datos = {
+        ...nuevoIngreso,
+        valor_recibido: cleanMoneyValue(nuevoIngreso.valor_recibido),
+        saldo_anterior: cleanMoneyValue(nuevoIngreso.saldo_anterior),
+        saldo_en_caja: cleanMoneyValue(nuevoIngreso.saldo_en_caja),
+        total_ingresos: cleanMoneyValue(nuevoIngreso.total_ingresos),
+        cliente_id: nuevoIngreso.cliente_id || null,
+        banco_id: nuevoIngreso.banco_id || null,
+        cuenta_id: nuevoIngreso.cuenta_id || null
+      };
+
+      const { data } = await axios.post("http://localhost:5000/api/ingresos", datos);
+      setIngresos([...ingresos, data]);
+      setNuevoIngreso({
+        cliente_id: "",
+        fecha: new Date().toISOString().split('T')[0],
+        valor_recibido: "",
+        banco_id: "",
+        cuenta_id: "",
+        numero_recibo: "",
+        saldo_anterior: "",
+        saldo_en_caja: "",
+        total_ingresos: ""
+      });
+    } catch (error) {
+      console.error("Error al crear ingreso:", error);
+      alert(error.response?.data?.message || "Error al crear ingreso");
     }
   };
 
-  const handleOpenModal = () => {
-    setOpenModal(true);
-    setIsEdit(false);
-    setCurrentInvoice({
-      id: null,
-      ingreso_id: "",
-      gasto_id: "",
-      fecha: new Date().toISOString().split('T')[0],
-      monto: ""
-    });
-  };
-
-  const handleCloseModal = () => setOpenModal(false);
-
-  const handleInputChange = (e) => {
+  // Función para manejar el cambio en campos monetarios de gastos
+  const handleGastoMoneyChange = (e) => {
     const { name, value } = e.target;
-    setCurrentInvoice(prev => ({
+    setNuevoGasto(prev => ({
       ...prev,
       [name]: value
     }));
   };
 
-  const handleSubmit = async (e) => {
+  // Función para formatear los campos monetarios de gastos cuando pierden el foco
+  const handleGastoMoneyBlur = (e) => {
+    const { name, value } = e.target;
+    const numericValue = cleanMoneyValue(value);
+    
+    setNuevoGasto(prev => ({
+      ...prev,
+      [name]: formatCurrency(numericValue)
+    }));
+  };
+
+  // Función para manejar el cambio en campos monetarios de recibos
+  const handleReciboMoneyChange = (e) => {
+    const { name, value } = e.target;
+    setNuevoRecibo(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Función para formatear los campos monetarios de recibos cuando pierden el foco
+  const handleReciboMoneyBlur = (e) => {
+    const { name, value } = e.target;
+    const numericValue = cleanMoneyValue(value);
+    
+    setNuevoRecibo(prev => ({
+      ...prev,
+      [name]: formatCurrency(numericValue)
+    }));
+  };
+
+  // Crear nuevo gasto
+  const crearGasto = async (e) => {
     e.preventDefault();
     try {
-      setLoading(true);
-      
-      if (isEdit) {
-        await axios.put(`${API_URL}/${currentInvoice.id}`, currentInvoice);
-        showSnackbar("Factura actualizada", "success");
-      } else {
-        await axios.post(API_URL, currentInvoice);
-        showSnackbar("Factura creada", "success");
-      }
-      
-      await fetchInvoices();
-      handleCloseModal();
-    } catch (err) {
-      showSnackbar("Error al guardar", "error");
-      console.error("Error saving invoice:", err);
-    } finally {
-      setLoading(false);
+      const datos = {
+        ...nuevoGasto,
+        monto: cleanMoneyValue(nuevoGasto.monto),
+        banco_id: nuevoGasto.banco_id || null,
+        cuenta_id: nuevoGasto.cuenta_id || null,
+        proveedor_id: nuevoGasto.proveedor_id || null,
+        centro_costo_id: nuevoGasto.centro_costo_id || null,
+        presupuesto_id: nuevoGasto.presupuesto_id || null
+      };
+
+      const { data } = await axios.post("http://localhost:5000/api/gastos", datos);
+      setGastos([...gastos, data]);
+      setNuevoGasto({
+        fecha: new Date().toISOString().split('T')[0],
+        descripcion: "",
+        monto: "",
+        categoria: "",
+        metodo_pago: "Efectivo",
+        banco_id: "",
+        cuenta_id: "",
+        proveedor_id: "",
+        centro_costo_id: "",
+        presupuesto_id: ""
+      });
+    } catch (error) {
+      console.error("Error al crear gasto:", error);
+      alert(error.response?.data?.message || "Error al crear gasto");
     }
   };
 
-  const handleEdit = (invoice) => {
-    setCurrentInvoice({
-      ...invoice,
-      fecha: invoice.fecha ? invoice.fecha.split('T')[0] : new Date().toISOString().split('T')[0]
-    });
-    setIsEdit(true);
-    setOpenModal(true);
-  };
-
-  const handleDelete = async (id) => {
+  // Crear nuevo recibo
+  const crearRecibo = async (e) => {
+    e.preventDefault();
     try {
-      setLoading(true);
-      await axios.delete(`${API_URL}/${id}`);
-      showSnackbar("Factura eliminada", "success");
-      await fetchInvoices();
-    } catch (err) {
-      showSnackbar("Error al eliminar", "error");
-      console.error("Error deleting invoice:", err);
-    } finally {
-      setLoading(false);
+      const datos = {
+        ...nuevoRecibo,
+        monto: cleanMoneyValue(nuevoRecibo.monto)
+      };
+
+      const { data } = await axios.post("http://localhost:5000/api/recibos", datos);
+      setRecibos([...recibos, data]);
+      setNuevoRecibo({
+        ingreso_id: "",
+        gasto_id: "",
+        fecha: new Date().toISOString().split('T')[0],
+        monto: ""
+      });
+    } catch (error) {
+      console.error("Error al crear recibo:", error);
+      alert(error.response?.data?.message || "Error al crear recibo");
     }
   };
 
-  const showSnackbar = (message, severity) => {
-    setSnackbar({ open: true, message, severity });
+  // Formatear fecha
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('es-ES');
   };
 
-  const handleCloseSnackbar = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
+
+  // Estados para edición
+const [editingRecibo, setEditingRecibo] = useState(null);
+const [editingIngreso, setEditingIngreso] = useState(null);
+const [editingGasto, setEditingGasto] = useState(null);
+
+// Funciones para editar registros
+const handleEditRecibo = (recibo) => {
+  setEditingRecibo(recibo);
+  setNuevoRecibo({
+    ingreso_id: recibo.ingreso_id,
+    gasto_id: recibo.gasto_id,
+    fecha: recibo.fecha,
+    monto: formatCurrency(recibo.monto)
+  });
+};
+
+const handleEditIngreso = (ingreso) => {
+  setEditingIngreso(ingreso);
+  setNuevoIngreso({
+    cliente_id: ingreso.cliente_id,
+    fecha: ingreso.fecha,
+    valor_recibido: formatCurrency(ingreso.valor_recibido),
+    banco_id: ingreso.banco_id,
+    cuenta_id: ingreso.cuenta_id,
+    numero_recibo: ingreso.numero_recibo,
+    saldo_anterior: formatCurrency(ingreso.saldo_anterior),
+    saldo_en_caja: formatCurrency(ingreso.saldo_en_caja),
+    total_ingresos: formatCurrency(ingreso.total_ingresos)
+  });
+};
+
+const handleEditGasto = (gasto) => {
+  setEditingGasto(gasto);
+  setNuevoGasto({
+    fecha: gasto.fecha,
+    descripcion: gasto.descripcion,
+    monto: formatCurrency(gasto.monto),
+    categoria: gasto.categoria,
+    metodo_pago: gasto.metodo_pago,
+    banco_id: gasto.banco_id,
+    cuenta_id: gasto.cuenta_id,
+    proveedor_id: gasto.proveedor_id,
+    centro_costo_id: gasto.centro_costo_id,
+    presupuesto_id: gasto.presupuesto_id
+  });
+};
+
+// Funciones para actualizar registros
+const actualizarRecibo = async (e) => {
+  e.preventDefault();
+  try {
+    const datos = {
+      ...nuevoRecibo,
+      monto: cleanMoneyValue(nuevoRecibo.monto)
+    };
+
+    const { data } = await axios.put(`http://localhost:5000/api/recibos/${editingRecibo.id}`, datos);
+    setRecibos(recibos.map(r => r.id === editingRecibo.id ? data : r));
+    setEditingRecibo(null);
+    setNuevoRecibo({
+      ingreso_id: "",
+      gasto_id: "",
+      fecha: new Date().toISOString().split('T')[0],
+      monto: ""
+    });
+  } catch (error) {
+    console.error("Error al actualizar recibo:", error);
+    alert(error.response?.data?.message || "Error al actualizar recibo");
+  }
+};
+
+const actualizarIngreso = async (e) => {
+  e.preventDefault();
+  try {
+    const datos = {
+      ...nuevoIngreso,
+      valor_recibido: cleanMoneyValue(nuevoIngreso.valor_recibido),
+      saldo_anterior: cleanMoneyValue(nuevoIngreso.saldo_anterior),
+      saldo_en_caja: cleanMoneyValue(nuevoIngreso.saldo_en_caja),
+      total_ingresos: cleanMoneyValue(nuevoIngreso.total_ingresos),
+      cliente_id: nuevoIngreso.cliente_id || null,
+      banco_id: nuevoIngreso.banco_id || null,
+      cuenta_id: nuevoIngreso.cuenta_id || null
+    };
+
+    const { data } = await axios.put(`http://localhost:5000/api/ingresos/${editingIngreso.id}`, datos);
+    setIngresos(ingresos.map(i => i.id === editingIngreso.id ? data : i));
+    setEditingIngreso(null);
+    setNuevoIngreso({
+      cliente_id: "",
+      fecha: new Date().toISOString().split('T')[0],
+      valor_recibido: "",
+      banco_id: "",
+      cuenta_id: "",
+      numero_recibo: "",
+      saldo_anterior: "",
+      saldo_en_caja: "",
+      total_ingresos: ""
+    });
+  } catch (error) {
+    console.error("Error al actualizar ingreso:", error);
+    alert(error.response?.data?.message || "Error al actualizar ingreso");
+  }
+};
+
+const actualizarGasto = async (e) => {
+  e.preventDefault();
+  try {
+    const datos = {
+      ...nuevoGasto,
+      monto: cleanMoneyValue(nuevoGasto.monto),
+      banco_id: nuevoGasto.banco_id || null,
+      cuenta_id: nuevoGasto.cuenta_id || null,
+      proveedor_id: nuevoGasto.proveedor_id || null,
+      centro_costo_id: nuevoGasto.centro_costo_id || null,
+      presupuesto_id: nuevoGasto.presupuesto_id || null
+    };
+
+    const { data } = await axios.put(`http://localhost:5000/api/gastos/${editingGasto.id}`, datos);
+    setGastos(gastos.map(g => g.id === editingGasto.id ? data : g));
+    setEditingGasto(null);
+    setNuevoGasto({
+      fecha: new Date().toISOString().split('T')[0],
+      descripcion: "",
+      monto: "",
+      categoria: "",
+      metodo_pago: "Efectivo",
+      banco_id: "",
+      cuenta_id: "",
+      proveedor_id: "",
+      centro_costo_id: "",
+      presupuesto_id: ""
+    });
+  } catch (error) {
+    console.error("Error al actualizar gasto:", error);
+    alert(error.response?.data?.message || "Error al actualizar gasto");
+  }
+};
+
+
+// Funciones para eliminar registros
+const eliminarRecibo = async (id) => {
+  if (window.confirm("¿Estás seguro de que deseas eliminar este recibo?")) {
+    try {
+      await axios.delete(`http://localhost:5000/api/recibos/${id}`);
+      setRecibos(recibos.filter(r => r.id !== id));
+    } catch (error) {
+      console.error("Error al eliminar recibo:", error);
+      alert(error.response?.data?.message || "Error al eliminar recibo");
+    }
+  }
+};
+
+const eliminarIngreso = async (id) => {
+  if (window.confirm("¿Estás seguro de que deseas eliminar este ingreso?")) {
+    try {
+      await axios.delete(`http://localhost:5000/api/ingresos/${id}`);
+      setIngresos(ingresos.filter(i => i.id !== id));
+    } catch (error) {
+      console.error("Error al eliminar ingreso:", error);
+      alert(error.response?.data?.message || "Error al eliminar ingreso");
+    }
+  }
+};
+
+const eliminarGasto = async (id) => {
+  if (window.confirm("¿Estás seguro de que deseas eliminar este gasto?")) {
+    try {
+      await axios.delete(`http://localhost:5000/api/gastos/${id}`);
+      setGastos(gastos.filter(g => g.id !== id));
+    } catch (error) {
+      console.error("Error al eliminar gasto:", error);
+      alert(error.response?.data?.message || "Error al eliminar gasto");
+    }
+  }
+};
+
+// Cancelar edición
+const cancelarEdicion = () => {
+  setEditingRecibo(null);
+  setEditingIngreso(null);
+  setEditingGasto(null);
+  setNuevoRecibo({
+    ingreso_id: "",
+    gasto_id: "",
+    fecha: new Date().toISOString().split('T')[0],
+    monto: ""
+  });
+  setNuevoIngreso({
+    cliente_id: "",
+    fecha: new Date().toISOString().split('T')[0],
+    valor_recibido: "",
+    banco_id: "",
+    cuenta_id: "",
+    numero_recibo: "",
+    saldo_anterior: "",
+    saldo_en_caja: "",
+    total_ingresos: ""
+  });
+  setNuevoGasto({
+    fecha: new Date().toISOString().split('T')[0],
+    descripcion: "",
+    monto: "",
+    categoria: "",
+    metodo_pago: "Efectivo",
+    banco_id: "",
+    cuenta_id: "",
+    proveedor_id: "",
+    centro_costo_id: "",
+    presupuesto_id: ""
+  });
+};
+
+   const downloadPDF = async () => {
+  setIsGeneratingPDF(true);
+
+  try {
+    // Crear un contenedor temporal para el PDF con un ancho mayor
+    const pdfElement = document.createElement("div");
+    pdfElement.style.width = "297mm"; // Usar tamaño A4 horizontal
+    pdfElement.style.padding = "15px";
+    pdfElement.style.background = "white";
+    pdfElement.style.color = "black";
+    pdfElement.style.fontFamily = "Arial, sans-serif";
+    pdfElement.style.fontSize = "10px"; // Reducir tamaño de fuente para más espacio
+
+    // Estilos mejorados para las tablas
+    const tableStyle = `
+      style="
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 15px;
+        page-break-inside: avoid;
+      "
+    `;
+    const thStyle = `
+      style="
+        padding: 6px;
+        border: 1px solid #ddd;
+        background-color: #f2f2f2;
+        text-align: left;
+        font-size: 9px;
+        white-space: nowrap;
+      "
+    `;
+    const tdStyle = `
+      style="
+        padding: 6px;
+        border: 1px solid #ddd;
+        font-size: 9px;
+        word-break: break-word;
+      "
+    `;
+    const tdRight = `
+      style="
+        padding: 6px;
+        border: 1px solid #ddd;
+        text-align: right;
+        font-size: 9px;
+      "
+    `;
+
+    // Función para crear una tabla de datos con paginación
+    const createTableHTML = (title, headers, rows) => {
+      return `
+        <h2 style="border-bottom: 1px solid #ddd; padding-bottom: 5px; font-size: 12px; margin-top: 20px;">${title}</h2>
+        <table ${tableStyle}>
+          <thead>
+            <tr>
+              ${headers.map(header => `<th ${thStyle}>${header}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      `;
+    };
+
+    // Tabla de Ingresos
+    const ingresosHeaders = ['N° Recibo', 'Fecha', 'Cliente', 'Valor Recibido', 'Saldo Anterior', 'Saldo en Caja', 'Total Ingresos', 'Banco', 'Cuenta'];
+    const ingresosRows = ingresos.map(i => `
+      <tr>
+        <td ${tdStyle}>${i.numero_recibo || 'N/A'}</td>
+        <td ${tdStyle}>${formatDate(i.fecha)}</td>
+        <td ${tdStyle}>${clientes.find(c => c.id === i.cliente_id)?.nombre || 'Sin cliente'}</td>
+        <td ${tdRight}>${formatCurrency(i.valor_recibido)}</td>
+        <td ${tdRight}>${formatCurrency(i.saldo_anterior)}</td>
+        <td ${tdRight}>${formatCurrency(i.saldo_en_caja)}</td>
+        <td ${tdRight}>${formatCurrency(i.total_ingresos)}</td>
+        <td ${tdStyle}>${bancos.find(b => b.id === i.banco_id)?.nombre || 'N/A'}</td>
+        <td ${tdStyle}>${cuentas.find(c => c.id === i.cuenta_id)?.numero_cuenta || 'N/A'}</td>
+      </tr>
+    `).join('');
+
+    // Tabla de Gastos
+    const gastosHeaders = ['Fecha', 'Descripción', 'Categoría', 'Método Pago', 'Monto', 'Proveedor', 'Centro Costo', 'Presupuesto'];
+    const gastosRows = gastos.map(g => `
+      <tr>
+        <td ${tdStyle}>${formatDate(g.fecha)}</td>
+        <td ${tdStyle}>${g.descripcion}</td>
+        <td ${tdStyle}>${g.categoria}</td>
+        <td ${tdStyle}>${g.metodo_pago}</td>
+        <td ${tdRight}>${formatCurrency(g.monto)}</td>
+        <td ${tdStyle}>${proveedores.find(p => p.id === g.proveedor_id)?.nombre || 'N/A'}</td>
+        <td ${tdStyle}>${centrosCostos.find(cc => cc.id === g.centro_costo_id)?.nombre || 'N/A'}</td>
+        <td ${tdStyle}>${presupuestos.find(p => p.id === g.presupuesto_id)?.nombre || 'N/A'}</td>
+      </tr>
+    `).join('');
+
+    // Tabla de Recibos
+    const recibosHeaders = ['ID', 'Fecha', 'Ingreso', 'Monto Ingreso', 'Gasto', 'Monto Gasto', 'Monto Recibo'];
+    const recibosRows = recibos.map(r => {
+      const ingreso = ingresos.find(i => i.id === r.ingreso_id);
+      const gasto = gastos.find(g => g.id === r.gasto_id);
+      return `
+        <tr>
+          <td ${tdStyle}>${r.id}</td>
+          <td ${tdStyle}>${formatDate(r.fecha)}</td>
+          <td ${tdStyle}>${ingreso ? `Recibo #${ingreso.numero_recibo}` : `ID ${r.ingreso_id}`}</td>
+          <td ${tdRight}>${ingreso ? formatCurrency(ingreso.valor_recibido) : 'N/A'}</td>
+          <td ${tdStyle}>${gasto ? gasto.descripcion : `ID ${r.gasto_id}`}</td>
+          <td ${tdRight}>${gasto ? formatCurrency(gasto.monto) : 'N/A'}</td>
+          <td ${tdRight}>${formatCurrency(r.monto)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    // Construir el contenido HTML completo con margen inferior adicional
+    pdfElement.innerHTML = `
+  <div style="margin-bottom: 50px;"> <!-- Aumentamos el margen inferior -->
+    <h1 style="text-align: center; margin-bottom: 13px; font-size: 14px;">Reporte Financiero Completo</h1>
+    ${createTableHTML("Ingresos", ingresosHeaders, ingresosRows)}
+    ${createTableHTML("Gastos", gastosHeaders, gastosRows)}
+    ${createTableHTML("Recibos", recibosHeaders, recibosRows)}
+  </div>
+`;
+
+    document.body.appendChild(pdfElement);
+
+    // Configuración para html2canvas
+    const canvas = await html2canvas(pdfElement, {
+      scale: 1,
+      logging: false,
+      useCORS: true,
+      width: pdfElement.offsetWidth,
+      height: pdfElement.scrollHeight,
+      windowWidth: pdfElement.scrollWidth,
+      windowHeight: pdfElement.scrollHeight
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("l", "mm", "a4"); // Orientación horizontal
+    const imgWidth = 297; // Ancho de A4 en mm (horizontal)
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+    document.body.removeChild(pdfElement);
+
+    // Agregar paginación más abajo (ajustado a 15mm desde el borde inferior)
+    const totalPages = pdf.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i);
+      pdf.setFontSize(8);
+      // Posición ajustada: x = ancho-20mm, y = alto-15mm
+      pdf.text(`Página ${i} de ${totalPages}`, imgWidth - 20, imgHeight - 15);
+    }
+
+    pdf.save("reporte_financiero_completo.pdf");
+
+  } catch (error) {
+    console.error("Error al generar PDF:", error);
+    alert("Error al generar el PDF. Por favor intente nuevamente.");
+  } finally {
+    setIsGeneratingPDF(false);
+  }
+};
+
+  // Función para exportar a Excel
+  const downloadExcel = async () => {
+    setIsGeneratingExcel(true);
+    
+    try {
+      const wb = XLSX.utils.book_new();
+      
+      const ingresosData = ingresos.map(ingreso => ({
+        "N° Recibo": ingreso.numero_recibo,
+        "Fecha": formatDate(ingreso.fecha),
+        "Cliente": clientes.find(c => c.id === ingreso.cliente_id)?.nombre || "Sin cliente",
+        "Valor Recibido": cleanMoneyValue(ingreso.valor_recibido),
+        "Saldo Anterior": cleanMoneyValue(ingreso.saldo_anterior),
+        "Saldo en Caja": cleanMoneyValue(ingreso.saldo_en_caja),
+        "Total Ingresos": cleanMoneyValue(ingreso.total_ingresos),
+        "Banco": bancos.find(b => b.id === ingreso.banco_id)?.nombre || "No aplica",
+        "Cuenta": cuentas.find(c => c.id === ingreso.cuenta_id)?.numero_cuenta || "No aplica"
+      }));
+      
+      const ingresosWS = XLSX.utils.json_to_sheet(ingresosData);
+      XLSX.utils.book_append_sheet(wb, ingresosWS, "Ingresos");
+      
+      const gastosData = gastos.map(gasto => ({
+        "Fecha": formatDate(gasto.fecha),
+        "Descripción": gasto.descripcion,
+        "Categoría": gasto.categoria,
+        "Monto": cleanMoneyValue(gasto.monto),
+        "Método de Pago": gasto.metodo_pago,
+        "Proveedor": proveedores.find(p => p.id === gasto.proveedor_id)?.nombre || "Sin proveedor",
+        "Centro de Costo": centrosCostos.find(cc => cc.id === gasto.centro_costo_id)?.nombre || "No aplica",
+        "Presupuesto": presupuestos.find(p => p.id === gasto.presupuesto_id)?.nombre || "No aplica"
+      }));
+      
+      const gastosWS = XLSX.utils.json_to_sheet(gastosData);
+      XLSX.utils.book_append_sheet(wb, gastosWS, "Gastos");
+      
+      const recibosData = recibos.map(recibo => {
+        const ingreso = ingresos.find(i => i.id === recibo.ingreso_id);
+        const gasto = gastos.find(g => g.id === recibo.gasto_id);
+        
+        return {
+          "ID": recibo.id,
+          "Fecha": formatDate(recibo.fecha),
+          "Ingreso": ingreso ? `Recibo #${ingreso.numero_recibo}` : `ID ${recibo.ingreso_id}`,
+          "Monto Ingreso": ingreso ? cleanMoneyValue(ingreso.valor_recibido) : 0,
+          "Gasto": gasto ? gasto.descripcion : `ID ${recibo.gasto_id}`,
+          "Monto Gasto": gasto ? cleanMoneyValue(gasto.monto) : 0,
+          "Monto Recibo": cleanMoneyValue(recibo.monto)
+        };
+      });
+      
+      const recibosWS = XLSX.utils.json_to_sheet(recibosData);
+      XLSX.utils.book_append_sheet(wb, recibosWS, "Recibos");
+      
+      XLSX.writeFile(wb, "reporte_financiero.xlsx");
+      
+    } catch (error) {
+      console.error("Error al generar Excel:", error);
+      alert("Error al generar el archivo Excel. Por favor intente nuevamente.");
+    } finally {
+      setIsGeneratingExcel(false);
+    }
   };
 
   return (
-    <Box m="20px">
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-
-      <Header
-        title="FACTURAS"
-        subtitle="Facturas de Balance de Caja"
-        rightContent={
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleOpenModal}
-            disabled={loading}
-            sx={{
-              backgroundColor: colors.blueAccent[600],
-              "&:hover": { backgroundColor: colors.blueAccent[700] }
+    <div 
+      ref={pdfRef}
+      style={{ 
+        padding: "20px", 
+        color: "white",
+        '@media print': {
+          transform: 'scale(0.9)',
+          transformOrigin: '0 0',
+          overflow: 'hidden'
+        }
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+        <h1 style={{ margin: 0 }}>Gestión de Recibos</h1>
+        <div>
+          <button 
+            onClick={downloadPDF} 
+            disabled={isGeneratingPDF}
+            style={{
+              marginRight: "10px",
+              padding: "8px 16px",
+              backgroundColor: isGeneratingPDF ? "#cccccc" : "#4CAF50",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer"
             }}
           >
-            Nueva Factura
-          </Button>
-        }
-      />
-      
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      
-      <Box
-        mt="40px"
-        height="75vh"
-        sx={{
-          "& .MuiDataGrid-root": { border: "none" },
-          "& .MuiDataGrid-cell": { border: "none" },
-          "& .MuiDataGrid-columnHeaders": {
-            backgroundColor: colors.blueAccent[700],
-            borderBottom: "none"
-          },
-          "& .MuiDataGrid-virtualScroller": {
-            backgroundColor: colors.primary[400]
-          },
-          "& .MuiDataGrid-footerContainer": {
-            borderTop: "none",
-            backgroundColor: colors.blueAccent[700]
-          }
-        }}
-      >
-        {loading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-            <CircularProgress />
-          </Box>
-        ) : (
-          <DataGrid
-            rows={invoices}
-            columns={columns}
-            pageSizeOptions={[5, 10, 25]}
-            initialState={{
-              pagination: { paginationModel: { pageSize: 10 } }
+            {isGeneratingPDF ? "Generando PDF..." : "Exportar a PDF"}
+          </button>
+          <button 
+            onClick={downloadExcel} 
+            disabled={isGeneratingExcel}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: isGeneratingExcel ? "#cccccc" : "#2196F3",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer"
             }}
-            loading={loading}
-          />
-        )}
-      </Box>
+          >
+            {isGeneratingExcel ? "Generando Excel..." : "Exportar a Excel"}
+          </button>
+        </div>
+      </div>
 
-      <Modal open={openModal} onClose={handleCloseModal}>
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 400,
-            bgcolor: "background.paper",
-            boxShadow: 24,
-            p: 4,
-            borderRadius: 1
-          }}
-        >
-          <Typography variant="h6" mb={3}>
-            {isEdit ? "Editar Factura" : "Nueva Factura"}
-          </Typography>
-          <form onSubmit={handleSubmit}>
-            <FormControl fullWidth margin="normal">
-              <TextField
-                label="Ingreso ID"
-                name="ingreso_id"
-                value={currentInvoice.ingreso_id}
-                onChange={handleInputChange}
-                required
-                type="number"
-                disabled={loading}
-              />
-            </FormControl>
-            <FormControl fullWidth margin="normal">
-              <TextField
-                label="Gasto ID"
-                name="gasto_id"
-                value={currentInvoice.gasto_id}
-                onChange={handleInputChange}
-                required
-                type="number"
-                disabled={loading}
-              />
-            </FormControl>
-            <FormControl fullWidth margin="normal">
-              <TextField
-                label="Fecha"
+      {/* Formulario de Ingresos */}
+      <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
+        <h2>Registrar Ingreso</h2>
+        <form onSubmit={editingIngreso ? actualizarIngreso : crearIngreso}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
+            <div>
+              <label>Cliente:</label>
+              <select
+                name="cliente_id"
+                value={nuevoIngreso.cliente_id}
+                onChange={handleChange(setNuevoIngreso, nuevoIngreso)}
+                style={{ width: "100%" }}
+              >
+                <option value="">Seleccionar cliente</option>
+                {clientes.map(c => (
+                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label>Fecha:</label>
+              <input
                 type="date"
                 name="fecha"
-                value={currentInvoice.fecha}
-                onChange={handleInputChange}
+                value={nuevoIngreso.fecha}
+                onChange={handleChange(setNuevoIngreso, nuevoIngreso)}
+                style={{ width: "100%" }}
                 required
-                InputLabelProps={{ shrink: true }}
-                disabled={loading}
               />
-            </FormControl>
-            <FormControl fullWidth margin="normal">
-              <TextField
-                label="Monto"
-                type="number"
+            </div>
+
+            <div>
+              <label>Número de Recibo:</label>
+              <input
+                type="text"
+                name="numero_recibo"
+                value={nuevoIngreso.numero_recibo}
+                onChange={handleChange(setNuevoIngreso, nuevoIngreso)}
+                style={{ width: "100%" }}
+                required
+              />
+            </div>
+
+            <div>
+              <label>Valor Recibido:</label>
+              <input
+                name="valor_recibido"
+                value={nuevoIngreso.valor_recibido}
+                onChange={handleMoneyChange('valor_recibido')}
+                onBlur={handleMoneyBlur('valor_recibido')}
+                placeholder="$ 0"
+                style={{ width: "100%" }}
+                required
+              />
+            </div>
+
+            <div>
+              <label>Saldo Anterior:</label>
+              <input
+                name="saldo_anterior"
+                value={nuevoIngreso.saldo_anterior}
+                onChange={handleMoneyChange('saldo_anterior')}
+                onBlur={handleMoneyBlur('saldo_anterior')}
+                placeholder="$ 0"
+                style={{ width: "100%" }}
+                required
+              />
+            </div>
+
+            <div>
+              <label>Saldo en Caja:</label>
+              <input
+                name="saldo_en_caja"
+                value={nuevoIngreso.saldo_en_caja}
+                readOnly
+                style={{ width: "100%", backgroundColor: "#f0f0f0" }}
+              />
+            </div>
+
+            <div>
+              <label>Total Ingresos:</label>
+              <input
+                name="total_ingresos"
+                value={nuevoIngreso.total_ingresos}
+                readOnly
+                style={{ width: "100%", backgroundColor: "#f0f0f0" }}
+              />
+            </div>
+
+            <div>
+              <label>Banco:</label>
+              <select
+                name="banco_id"
+                value={nuevoIngreso.banco_id}
+                onChange={handleChange(setNuevoIngreso, nuevoIngreso)}
+                style={{ width: "100%" }}
+              >
+                <option value="">Seleccionar banco</option>
+                {bancos.map(b => (
+                  <option key={b.id} value={b.id}>{b.nombre}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label>Cuenta:</label>
+              <select
+                name="cuenta_id"
+                value={nuevoIngreso.cuenta_id}
+                onChange={handleChange(setNuevoIngreso, nuevoIngreso)}
+                style={{ width: "100%" }}
+              >
+                <option value="">Seleccionar cuenta</option>
+                {cuentas.map(c => (
+                  <option key={c.id} value={c.id}>{c.numero_cuenta} - {bancos.find(b => b.id === c.banco_id)?.nombre}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <button type="submit" style={{ marginTop: "10px" }}>Registrar Ingreso</button>
+        </form>
+      </div>
+
+      {/* Lista de Ingresos - Versión Modificada */}
+
+ {/* Lista de Ingresos con Acciones */}
+        <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
+          <h2>Lista de Ingresos</h2>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "900px" }}>
+              <thead>
+                <tr style={{ backgroundColor: "#2c2c2e", color: "#fff", textAlign: "left" }}>
+                  <th style={{ padding: "10px" }}>N° Recibo</th>
+                  <th style={{ padding: "10px" }}>Fecha</th>
+                  <th style={{ padding: "10px" }}>Cliente</th>
+                  <th style={{ padding: "10px", textAlign: "right" }}>Valor Recibido</th>
+                  <th style={{ padding: "10px", textAlign: "right" }}>Saldo Anterior</th>
+                  <th style={{ padding: "10px", textAlign: "right" }}>Saldo en Caja</th>
+                  <th style={{ padding: "10px", textAlign: "right" }}>Total Ingresos</th>
+                  <th style={{ padding: "10px" }}>Banco</th>
+                  <th style={{ padding: "10px" }}>Cuenta</th>
+                  <th style={{ padding: "10px" }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ingresos.map((i) => (
+                  <tr key={i.id} style={{ borderBottom: "1px solid #ccc" }}>
+                    <td style={{ padding: "10px" }}>{i.numero_recibo || 'N/A'}</td>
+                    <td style={{ padding: "10px" }}>{formatDate(i.fecha)}</td>
+                    <td style={{ padding: "10px" }}>
+                      {clientes.find(c => c.id === i.cliente_id)?.nombre || "Sin cliente"}
+                    </td>
+                    <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.valor_recibido)}</td>
+                    <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.saldo_anterior)}</td>
+                    <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.saldo_en_caja)}</td>
+                    <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(i.total_ingresos)}</td>
+                    <td style={{ padding: "10px" }}>
+                      {bancos.find(b => b.id === i.banco_id)?.nombre || "N/A"}
+                    </td>
+                    <td style={{ padding: "10px" }}>
+                      {cuentas.find(c => c.id === i.cuenta_id)?.numero_cuenta || "N/A"}
+                    </td>
+                    <td style={{ padding: "10px", whiteSpace: "nowrap" }}>
+                      <button 
+                        onClick={() => handleEditIngreso(i)}
+                        style={{ 
+                          marginRight: "5px",
+                          padding: "5px 10px",
+                          backgroundColor: "#4CAF50",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "3px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        Editar
+                      </button>
+                      <button 
+                        onClick={() => eliminarIngreso(i.id)}
+                        style={{ 
+                          padding: "5px 10px",
+                          backgroundColor: "#f44336",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "3px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      {/* Formulario de Gastos */}
+      <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
+        <h2>Registrar Gasto</h2>
+        <form onSubmit={editingGasto ? actualizarGasto : crearGasto}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
+            <div>
+              <label>Fecha:</label>
+              <input
+                type="date"
+                name="fecha"
+                value={nuevoGasto.fecha}
+                onChange={handleChange(setNuevoGasto, nuevoGasto)}
+                style={{ width: "100%" }}
+                required
+              />
+            </div>
+
+            <div>
+              <label>Descripción:</label>
+              <input
+                name="descripcion"
+                value={nuevoGasto.descripcion}
+                onChange={handleChange(setNuevoGasto, nuevoGasto)}
+                style={{ width: "100%" }}
+                required
+              />
+            </div>
+
+            <div>
+              <label>Monto:</label>
+              <input
                 name="monto"
-                value={currentInvoice.monto}
-                onChange={handleInputChange}
+                value={nuevoGasto.monto}
+                onChange={handleGastoMoneyChange}
+                onBlur={handleGastoMoneyBlur}
+                placeholder="$ 0"
+                style={{ width: "100%" }}
                 required
-                inputProps={{ step: "0.01", min: "0" }}
-                disabled={loading}
               />
-            </FormControl>
-            <Box mt={3} display="flex" justifyContent="flex-end">
-              <Button
-                onClick={handleCloseModal}
-                disabled={loading}
-                sx={{ mr: 2 }}
+            </div>
+
+            <div>
+              <label>Categoría:</label>
+              <input
+                name="categoria"
+                value={nuevoGasto.categoria}
+                onChange={handleChange(setNuevoGasto, nuevoGasto)}
+                style={{ width: "100%" }}
+                required
+              />
+            </div>
+
+            <div>
+              <label>Método de Pago:</label>
+              <select
+                name="metodo_pago"
+                value={nuevoGasto.metodo_pago}
+                onChange={handleChange(setNuevoGasto, nuevoGasto)}
+                style={{ width: "100%" }}
+                required
               >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={loading}
+                <option value="Efectivo">Efectivo</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Tarjeta">Tarjeta</option>
+                <option value="Cheque">Cheque</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Proveedor:</label>
+              <select
+                name="proveedor_id"
+                value={nuevoGasto.proveedor_id}
+                onChange={handleChange(setNuevoGasto, nuevoGasto)}
+                style={{ width: "100%" }}
               >
-                {loading ? <CircularProgress size={24} /> : isEdit ? "Actualizar" : "Guardar"}
-              </Button>
-            </Box>
-          </form>
-        </Box>
-      </Modal>
-    </Box>
+                <option value="">Seleccionar proveedor</option>
+                {proveedores.map(p => (
+                  <option key={p.id} value={p.id}>{p.nombre}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label>Banco:</label>
+              <select
+                name="banco_id"
+                value={nuevoGasto.banco_id}
+                onChange={handleChange(setNuevoGasto, nuevoGasto)}
+                style={{ width: "100%" }}
+              >
+                <option value="">Seleccionar banco</option>
+                {bancos.map(b => (
+                  <option key={b.id} value={b.id}>{b.nombre}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label>Cuenta:</label>
+              <select
+                name="cuenta_id"
+                value={nuevoGasto.cuenta_id}
+                onChange={handleChange(setNuevoGasto, nuevoGasto)}
+                style={{ width: "100%" }}
+              >
+                <option value="">Seleccionar cuenta</option>
+                {cuentas.map(c => (
+                  <option key={c.id} value={c.id}>{c.numero_cuenta} - {bancos.find(b => b.id === c.banco_id)?.nombre}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label>Centro de Costo:</label>
+              <select
+                name="centro_costo_id"
+                value={nuevoGasto.centro_costo_id}
+                onChange={handleChange(setNuevoGasto, nuevoGasto)}
+                style={{ width: "100%" }}
+              >
+                <option value="">Seleccionar centro de costo</option>
+                {centrosCostos.map(cc => (
+                  <option key={cc.id} value={cc.id}>{cc.nombre}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label>Presupuesto:</label>
+              <select
+                name="presupuesto_id"
+                value={nuevoGasto.presupuesto_id}
+                onChange={handleChange(setNuevoGasto, nuevoGasto)}
+                style={{ width: "100%" }}
+              >
+                <option value="">Seleccionar presupuesto</option>
+                {presupuestos.map(p => (
+                  <option key={p.id} value={p.id}>{p.nombre}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <button type="submit" style={{ marginTop: "10px" }}>Registrar Gasto</button>
+        </form>
+      </div>
+
+      {/* Lista de Gastos - Versión Modificada */}
+{/* Lista de Gastos - Versión Modificada con Acciones */}
+<div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
+  <h2>Lista de Gastos</h2>
+  <div style={{ overflowX: "auto" }}>
+    <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "900px" }}>
+      <thead>
+        <tr style={{ backgroundColor: "#2c2c2e", color: "#fff", textAlign: "left" }}>
+          <th style={{ padding: "10px" }}>Fecha</th>
+          <th style={{ padding: "10px" }}>Descripción</th>
+          <th style={{ padding: "10px" }}>Categoría</th>
+          <th style={{ padding: "10px" }}>Método Pago</th>
+          <th style={{ padding: "10px" }}>Proveedor</th>
+          <th style={{ padding: "10px", textAlign: "right" }}>Monto</th>
+          <th style={{ padding: "10px" }}>Centro Costo</th>
+          <th style={{ padding: "10px" }}>Presupuesto</th>
+          <th style={{ padding: "10px" }}>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {gastos.map((g) => (
+          <tr key={g.id} style={{ borderBottom: "1px solid #ccc" }}>
+            <td style={{ padding: "10px" }}>{formatDate(g.fecha)}</td>
+            <td style={{ padding: "10px" }}>{g.descripcion}</td>
+            <td style={{ padding: "10px" }}>{g.categoria}</td>
+            <td style={{ padding: "10px" }}>{g.metodo_pago}</td>
+            <td style={{ padding: "10px" }}>
+              {proveedores.find(p => p.id === g.proveedor_id)?.nombre || "N/A"}
+            </td>
+            <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(g.monto)}</td>
+            <td style={{ padding: "10px" }}>
+              {centrosCostos.find(cc => cc.id === g.centro_costo_id)?.nombre || "N/A"}
+            </td>
+            <td style={{ padding: "10px" }}>
+              {presupuestos.find(p => p.id === g.presupuesto_id)?.nombre || "N/A"}
+            </td>
+            <td style={{ padding: "10px", whiteSpace: "nowrap" }}>
+              <button 
+                onClick={() => handleEditGasto(g)}
+                style={{ 
+                  marginRight: "5px",
+                  padding: "5px 10px",
+                  backgroundColor: "#4CAF50",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "3px",
+                  cursor: "pointer"
+                }}
+              >
+                Editar
+              </button>
+              <button 
+                onClick={() => eliminarGasto(g.id)}
+                style={{ 
+                  padding: "5px 10px",
+                  backgroundColor: "#f44336",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "3px",
+                  cursor: "pointer"
+                }}
+              >
+                Eliminar
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
+      {/* Formulario de Recibos */}
+      <div style={{ marginBottom: "30px", border: "1px solid #444", padding: "15px", borderRadius: "5px" }}>
+        <h2>Crear Recibo</h2>
+        <form onSubmit={editingRecibo ? actualizarRecibo : crearRecibo}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
+            <div>
+              <label>Ingreso:</label>
+              <select
+                name="ingreso_id"
+                value={nuevoRecibo.ingreso_id}
+                onChange={handleChange(setNuevoRecibo, nuevoRecibo)}
+                style={{ width: "100%" }}
+                required
+              >
+                <option value="">Seleccionar ingreso</option>
+                {ingresos.map(i => (
+                  <option key={i.id} value={i.id}>
+                    Recibo #{i.numero_recibo} - {formatCurrency(i.valor_recibido)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label>Gasto:</label>
+              <select
+                name="gasto_id"
+                value={nuevoRecibo.gasto_id}
+                onChange={handleChange(setNuevoRecibo, nuevoRecibo)}
+                style={{ width: "100%" }}
+                required
+              >
+                <option value="">Seleccionar gasto</option>
+                {gastos.map(g => (
+                  <option key={g.id} value={g.id}>
+                    {g.descripcion} - {formatCurrency(g.monto)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label>Fecha:</label>
+              <input
+                type="date"
+                name="fecha"
+                value={nuevoRecibo.fecha}
+                onChange={handleChange(setNuevoRecibo, nuevoRecibo)}
+                style={{ width: "100%" }}
+                required
+              />
+            </div>
+
+            <div>
+              <label>Monto:</label>
+              <input
+                name="monto"
+                value={nuevoRecibo.monto}
+                onChange={handleReciboMoneyChange}
+                onBlur={handleReciboMoneyBlur}
+                placeholder="$ 0"
+                style={{ width: "100%" }}
+                required
+              />
+            </div>
+          </div>
+          <button type="submit" style={{ marginTop: "10px" }}>Crear Recibo</button>
+        </form>
+      </div>
+
+      {/* Tabla de Recibos */}
+     
+        <div>
+          <h2 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>Lista de Recibos</h2>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "700px" }}>
+              <thead>
+                <tr style={{ backgroundColor: "#2c2c2e", color: "#fff", textAlign: "left" }}>
+                  <th style={{ padding: "10px" }}>ID</th>
+                  <th style={{ padding: "10px" }}>Fecha</th>
+                  <th style={{ padding: "10px" }}>Ingreso</th>
+                  <th style={{ padding: "10px" }}>Gasto</th>
+                  <th style={{ padding: "10px", textAlign: "right" }}>Monto</th>
+                  <th style={{ padding: "10px" }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recibos.map((r) => {
+                  const ingreso = ingresos.find(i => i.id === r.ingreso_id);
+                  const gasto = gastos.find(g => g.id === r.gasto_id);
+                  
+                  return (
+                    <tr key={r.id} style={{ borderBottom: "1px solid #ccc" }}>
+                      <td style={{ padding: "10px" }}>{r.id}</td>
+                      <td style={{ padding: "10px" }}>{formatDate(r.fecha)}</td>
+                      <td style={{ padding: "10px" }}>
+                        {ingreso ? `Recibo #${ingreso.numero_recibo} - ${formatCurrency(ingreso.valor_recibido)}` : `Ingreso ${r.ingreso_id}`}
+                      </td>
+                      <td style={{ padding: "10px" }}>
+                        {gasto ? `${gasto.descripcion} - ${formatCurrency(gasto.monto)}` : `Gasto ${r.gasto_id}`}
+                      </td>
+                      <td style={{ padding: "10px", textAlign: "right" }}>{formatCurrency(r.monto)}</td>
+                      <td style={{ padding: "10px", whiteSpace: "nowrap" }}>
+                        <button 
+                          onClick={() => handleEditRecibo(r)}
+                          style={{ 
+                            marginRight: "5px",
+                            padding: "5px 10px",
+                            backgroundColor: "#4CAF50",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "3px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          Editar
+                        </button>
+                        <button 
+                          onClick={() => eliminarRecibo(r.id)}
+                          style={{ 
+                            padding: "5px 10px",
+                            backgroundColor: "#f44336",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "3px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+    </div>
   );
 };
 

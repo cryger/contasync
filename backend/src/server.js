@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Configuración de PostgreSQL (usa tus credenciales)
+// Configuración de PostgreSQL
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
@@ -15,7 +15,9 @@ const pool = new Pool({
   port: 5433,
 });
 
-// Ruta para obtener usuarios con sus roles
+// ================== RUTAS EXISTENTES ==================
+
+// Obtener usuarios con sus roles
 app.get('/api/usuarios-con-roles', async (req, res) => {
   try {
     const result = await pool.query(`
@@ -31,7 +33,7 @@ app.get('/api/usuarios-con-roles', async (req, res) => {
   }
 });
 
-// Ruta para obtener solo los roles
+// Obtener roles
 app.get('/api/roles', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM public.roles ORDER BY id ASC');
@@ -41,6 +43,9 @@ app.get('/api/roles', async (req, res) => {
   }
 });
 
+
+
+// ================== INICIO DE SERVIDOR ==================
 app.listen(5000, () => {
   console.log('Backend ejecutándose en http://localhost:5000');
 });

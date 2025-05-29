@@ -2,7 +2,20 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
-
+const ingresosRoutes = require("./routes/ingresos");
+const gastosRoutes = require("./routes/gastos");
+const recibosRoutes = require("./routes/recibos");
+const proyectosRoutes = require("./routes/proyectos");
+const clientesRouter = require("./routes/clientes");
+const suppliersRoutes = require("./routes/suppliers");
+const inversionesRoutes = require("./routes/inversiones.routes");
+const bancosRouter = require('./routes/bancos');
+const empleadosRouter = require('./routes/empleados');
+const cuentasRoutes = require('./routes/cuentas');
+const centrosCostosRouter = require('./routes/centrosCostos');
+const presupuestosRouter = require('./routes/presupuestos');
+const balanceRoutes = require('./routes/balanceRoutes'); // Nueva ruta
+const estadosFinancierosRouter = require('./routes/estadosFinancieros');
 const app = express();
 
 // Configuración básica de middleware
@@ -12,12 +25,27 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+
+
 app.use(express.json()); // Para parsear application/json
 app.use(express.urlencoded({ extended: true })); // Para parsear application/x-www-form-urlencoded
 
 // Rutas
 app.use('/api', userRoutes); // Esto hará que todas las rutas empiecen con /api
-
+app.use("/api/ingresos", ingresosRoutes);
+app.use("/api/gastos", gastosRoutes);
+app.use("/api/recibos", recibosRoutes);
+app.use("/api/proyectos", proyectosRoutes);
+app.use("/api/clientes", clientesRouter); 
+app.use("/api/proveedores", suppliersRoutes);
+app.use("/api/inversiones", inversionesRoutes);
+app.use('/api/bancos', bancosRouter);
+app.use('/api/empleados', empleadosRouter);
+app.use('/api/cuentas', cuentasRoutes);
+app.use('/api/centros-costos', centrosCostosRouter);
+app.use('/api/presupuestos', presupuestosRouter);
+app.use('/api/balances', balanceRoutes);
+app.use('/api/estados-financieros', estadosFinancierosRouter);
 
 
 // Manejador de rutas no encontradas
