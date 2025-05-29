@@ -11,8 +11,8 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'contasync',
-  password: 'diana2000',
-  port: 5432,
+  password: '123456',
+  port: 5433,
 });
 
 // ================== RUTAS EXISTENTES ==================
