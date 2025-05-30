@@ -99,30 +99,7 @@ const Efective = () => {
           color: "white"
         }}
       >
-        <div style={{ marginBottom: "15px" }}>
-          <label>Usuario:</label>
-          <select
-            name="usuario_id"
-            value={nuevaInversion.usuario_id}
-            onChange={handleChange}
-            required
-            style={{
-              width: "100%",
-              padding: "8px",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-              backgroundColor: "#1e2a38",
-              color: "white"
-            }}
-          >
-            <option value="">Seleccione un usuario</option>
-            {usuarios.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
+        
 
         <div style={{ marginBottom: "15px" }}>
           <label>Nombre del Proyecto:</label>
