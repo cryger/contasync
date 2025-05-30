@@ -202,6 +202,18 @@ const SideBar = () => {
             icon={<ReceiptOutlined />}
           />
           <Item
+            title="Efectivo"
+            path="/efective"
+            colors={colors}
+            icon={<MonetizationOnOutlined />}
+          />
+          <Item
+            title="Previsión"
+            path="/prevision"
+            colors={colors}
+            icon={<TimelineOutlined />}
+          />
+          <Item
             title="Proyectos"
             path="/projects"
             colors={colors}

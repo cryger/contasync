@@ -3,6 +3,8 @@ import SideBar from "./layout/sidebar";
 import Dashboard from "./dashboard";
 import Team from "./team";
 import Invoices from "./invoices";
+import Efective from "./efective";
+import Prevision from "./prevision";
 import Contacts from "./contacts";
 import Projects from "./projects";
 import Suppliers from "./suppliers";
@@ -29,6 +31,8 @@ export {
   Dashboard,
   Team,
   Invoices,
+  Efective,
+  Prevision,
   Contacts,
   Projects,
   Suppliers,
