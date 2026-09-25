@@ -24,8 +24,6 @@ import {
   Budget,
   Balances,
   Finances,
-  Efective,
-  Prevision,
 
  
   } from "./scenes";
@@ -39,8 +37,6 @@ const AppRouter = () => {
           <Route path="/team" element={<Team />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/invoices" element={<Invoices />} />
-          <Route path="/efective" element={<Efective />} />
-          <Route path="/prevision" element={<Prevision />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/suppliers" element={<Suppliers />} />
           <Route path="/investments" element={<Investments />} />
