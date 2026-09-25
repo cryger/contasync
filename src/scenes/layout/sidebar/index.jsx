@@ -37,7 +37,7 @@ import {
 
 } from "@mui/icons-material";
 import avatar from "../../../assets/images/avatar.jpg";
-import logo from "../../../assets/images/logo.png";
+import logo from "../../../assets/images/logo_contasync_simple.png";
 import Item from "./Item";
 import { ToggledContext } from "../../../App";
 

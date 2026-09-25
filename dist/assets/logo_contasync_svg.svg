@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Gradiente Cinta Azul Superior -->
+    <linearGradient id="blueArc" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0052D4"/>
+      <stop offset="50%" stop-color="#4364F7"/>
+      <stop offset="100%" stop-color="#6FB1FC"/>
+    </linearGradient>
+
+    <!-- Gradiente Cinta Inferior Cian -->
+    <linearGradient id="cyanArc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00C9FF"/>
+      <stop offset="100%" stop-color="#92FE9D"/>
+    </linearGradient>
+
+    <!-- Gradiente Flecha Verde -->
+    <linearGradient id="greenArrow" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0575E6"/>
+      <stop offset="40%" stop-color="#00F260"/>
+      <stop offset="100%" stop-color="#05DF72"/>
+    </linearGradient>
+
+    <!-- Gradiente Barras de Datos -->
+    <linearGradient id="barGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#0052D4"/>
+      <stop offset="100%" stop-color="#00D2FF"/>
+    </linearGradient>
+  </defs>
+
+  <g id="CONTASYNC_Isotipo">
+    <!-- 1. Arco Exterior Superior (Letra C) -->
+    <path d="M 370 120 
+             C 270 40, 100 80, 85 240 
+             C 75 340, 160 410, 260 415 
+             C 200 395, 120 330, 135 235 
+             C 150 145, 265 110, 370 120 Z" 
+          fill="url(#blueArc)" />
+
+    <!-- 2. Cinta Inferior de Cierre -->
+    <path d="M 135 235 
+             C 125 330, 200 405, 305 410 
+             C 385 415, 410 350, 400 335 
+             C 340 375, 240 380, 185 305 
+             C 155 265, 145 245, 135 235 Z" 
+          fill="url(#cyanArc)" />
+
+    <!-- 3. Barras Estadísticas Centrales -->
+    <!-- Barra Izquierda -->
+    <path d="M 185 245 L 220 230 L 220 305 L 185 305 Z" fill="url(#barGradient)" rx="4"/>
+    <!-- Barra Central -->
+    <path d="M 235 218 L 270 205 L 270 305 L 235 305 Z" fill="url(#barGradient)" rx="4"/>
+    <!-- Barra Derecha -->
+    <path d="M 285 190 L 320 175 L 320 280 L 285 295 Z" fill="url(#barGradient)" rx="4"/>
+
+    <!-- 4. Flecha Ascendente de Sincronización -->
+    <path d="M 155 210 
+             C 160 300, 230 330, 370 240 
+             L 345 215 
+             L 430 170 
+             L 410 260 
+             L 385 235 
+             C 270 310, 185 290, 155 210 Z" 
+          fill="url(#greenArrow)" />
+  </g>
+</svg>
