@@ -1,26 +1,21 @@
 {
-  "name": "backend",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "contasync-backend",
+  "version": "2.0.0",
+  "private": true,
+  "description": "API de Contasync: facturación rápida y reparto de utilidades a inversionistas",
+  "main": "src/server.js",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "db:init": "node database/init.js",
+    "test": "node --test"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "proxy": "http://localhost:5000",
   "dependencies": {
-    "@mui/icons-material": "^7.0.0",
-    "backend": "file:",
-    "bcrypt": "^5.1.1",
+    "contasync": "file:..",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "pg": "^8.14.1",
-    "pg-hstore": "^2.3.4"
+    "pg": "^8.14.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
