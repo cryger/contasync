@@ -12,6 +12,7 @@ Sistema de **Digital Code Group** para emitir facturas en segundos y calcular cu
 | **Gastos** | Lo que se resta para calcular la utilidad. |
 | **Inversionistas** | Aportes de capital (y retiros como aportes negativos) y reparto de utilidades del periodo con **% de participación, ganancia y rentabilidad** por socio. |
 | **Empresa** | Razón social, NIT, prefijo y consecutivo, resolución y pie de factura (salen en el PDF). |
+| **Apariencia** | Cada negocio pone su logo, nombre comercial y colores (10 temas listos o colores propios) y elige modo claro u oscuro por defecto. Cambia todo el sistema **y el PDF de la factura** en vivo. |
 
 ### Cómo se calcula el reparto
 
@@ -24,6 +25,12 @@ rentabilidad  = ganancia ÷ capital del inversionista
 ```
 
 Se puede elegir **Facturado** (pagadas + pendientes) o **Recaudado** (solo pagadas). Si hay pérdida, se reparte en negativo.
+
+## Personalización (marca blanca)
+
+Los colores se guardan en la tabla `empresa` (`color_acento`, `color_secundario`, `color_base`, `tema_modo`, `logo`, `nombre_comercial`).
+`frontend/src/theme.js` genera a partir de ellos todas las escalas de color (`useColors()` → `colors.acento[500]`, `colors.base[400]`, …),
+y `utils/pdfFactura.js` usa los mismos colores y el logo para la factura. El texto sobre cada color se elige solo (blanco o negro) para que siempre sea legible.
 
 ## Estructura
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Autocomplete, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Grid, IconButton,
-  MenuItem, Table, TableBody, TableCell, TableHead, TableRow, TextField, Tooltip, Typography, useTheme,
+  MenuItem, Table, TableBody, TableCell, TableHead, TableRow, TextField, Tooltip, Typography,
 } from "@mui/material";
 import { AddOutlined, DeleteOutline, PersonAddAlt1Outlined, PictureAsPdfOutlined } from "@mui/icons-material";
 import Header from "../../components/Header";
@@ -14,7 +14,7 @@ import { calcularFactura, MEDIOS_PAGO } from "../../utils/factura";
 import { formatoMoneda, hoy } from "../../utils/format";
 import { descargarFacturaPDF } from "../../utils/pdfFactura";
 import { CAMPOS_CLIENTE } from "../clientes/ClientesPage";
-import { tokens } from "../../theme";
+import { useColors } from "../../theme";
 
 const CONSUMIDOR_FINAL = "222222222222";
 let siguienteKey = 1;
@@ -29,7 +29,7 @@ const encabezadoInicial = () => ({
 });
 
 export default function NuevaFacturaPage() {
-  const colors = tokens(useTheme().palette.mode);
+  const colors = useColors();
   const notify = useNotify();
   const navigate = useNavigate();
   const buscadorRef = useRef(null);
@@ -146,7 +146,7 @@ export default function NuevaFacturaPage() {
       <Grid container spacing={3}>
         {/* Columna principal */}
         <Grid item xs={12} lg={8.5}>
-          <Box bgcolor={colors.primary[400]} p={2.5} borderRadius={2} mb={3}>
+          <Box bgcolor={colors.base[400]} p={2.5} borderRadius={2} mb={3}>
             <Grid container spacing={2} alignItems="center">
               <Grid item xs={12} md={6} display="flex" gap={1}>
                 <Autocomplete
@@ -184,7 +184,7 @@ export default function NuevaFacturaPage() {
             </Grid>
           </Box>
 
-          <Box bgcolor={colors.primary[400]} p={2.5} borderRadius={2}>
+          <Box bgcolor={colors.base[400]} p={2.5} borderRadius={2}>
             <Box display="flex" gap={1} mb={2}>
               <Autocomplete
                 fullWidth
@@ -260,7 +260,7 @@ export default function NuevaFacturaPage() {
 
         {/* Resumen */}
         <Grid item xs={12} lg={3.5}>
-          <Box bgcolor={colors.primary[400]} p={2.5} borderRadius={2} position={{ lg: "sticky" }} top={0}>
+          <Box bgcolor={colors.base[400]} p={2.5} borderRadius={2} position={{ lg: "sticky" }} top={0}>
             <Typography variant="h4" fontWeight="bold" mb={2}>Resumen</Typography>
             {[
               ["Subtotal", calculo.subtotal],
@@ -275,7 +275,7 @@ export default function NuevaFacturaPage() {
             <Divider sx={{ my: 1.5 }} />
             <Box display="flex" justifyContent="space-between" alignItems="baseline" mb={2}>
               <Typography variant="h4">Total</Typography>
-              <Typography variant="h2" fontWeight="bold" color={colors.greenAccent[500]}>
+              <Typography variant="h2" fontWeight="bold" color={colors.acento[500]}>
                 {formatoMoneda(calculo.total)}
               </Typography>
             </Box>
@@ -303,7 +303,7 @@ export default function NuevaFacturaPage() {
         <DialogTitle>Factura {emitida?.numero} emitida</DialogTitle>
         <DialogContent>
           <Typography>{emitida?.cliente_nombre}</Typography>
-          <Typography variant="h3" fontWeight="bold" color={colors.greenAccent[500]} mt={1}>
+          <Typography variant="h3" fontWeight="bold" color={colors.acento[500]} mt={1}>
             {formatoMoneda(emitida?.total)}
           </Typography>
         </DialogContent>

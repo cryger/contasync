@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Alert, Box, Chip, Grid, Tooltip, Typography, useTheme } from "@mui/material";
+import { Alert, Box, Chip, Grid, Tooltip, Typography } from "@mui/material";
 import {
   AccountBalanceWalletOutlined, PendingActionsOutlined, ReceiptLongOutlined, TrendingDownOutlined,
 } from "@mui/icons-material";
@@ -11,16 +11,16 @@ import useCarga from "../../hooks/useCarga";
 import { dashboardApi } from "../../api";
 import { ESTADOS_FACTURA } from "../../utils/factura";
 import { formatoFecha, formatoMoneda, hoy, inicioDeMes } from "../../utils/format";
-import { tokens } from "../../theme";
+import { useColors } from "../../theme";
 
 export default function DashboardPage() {
-  const colors = tokens(useTheme().palette.mode);
+  const colors = useColors();
   const navigate = useNavigate();
   const [periodo, setPeriodo] = useState({ desde: inicioDeMes(), hasta: hoy() });
   const { data: d, error } = useCarga(() => dashboardApi.obtener(periodo), [periodo]);
 
   const maxDia = Math.max(1, ...(d?.ventas_diarias || []).map((v) => v.total));
-  const panel = { bgcolor: colors.primary[400], p: 2.5, borderRadius: 2, height: "100%" };
+  const panel = { bgcolor: colors.base[400], p: 2.5, borderRadius: 2, height: "100%" };
 
   return (
     <Box>
@@ -57,7 +57,7 @@ export default function DashboardPage() {
                       <Tooltip key={v.fecha} title={`${formatoFecha(v.fecha)}: ${formatoMoneda(v.total)} (${v.cantidad})`}>
                         <Box flex={1} maxWidth={44} height="100%" display="flex" flexDirection="column" justifyContent="flex-end" alignItems="center">
                           <Box width="100%" height={`${(v.total / maxDia) * 85}%`} minHeight={4}
-                            bgcolor={colors.greenAccent[500]} borderRadius="4px 4px 0 0" />
+                            bgcolor={colors.acento[500]} borderRadius="4px 4px 0 0" />
                           <Typography variant="caption" color={colors.gray[300]} mt={0.5}>{v.fecha.slice(8, 10)}</Typography>
                         </Box>
                       </Tooltip>
@@ -70,7 +70,7 @@ export default function DashboardPage() {
               <Box sx={panel}>
                 <Typography variant="h5" fontWeight="bold" mb={2}>Mejores clientes</Typography>
                 {d.top_clientes.map((c) => (
-                  <Box key={c.id} display="flex" justifyContent="space-between" py={0.75} borderBottom={`1px solid ${colors.primary[500]}`}>
+                  <Box key={c.id} display="flex" justifyContent="space-between" py={0.75} borderBottom={`1px solid ${colors.base[500]}`}>
                     <Typography noWrap>{c.nombre}</Typography>
                     <Typography fontWeight="bold">{formatoMoneda(c.total)}</Typography>
                   </Box>
@@ -83,8 +83,8 @@ export default function DashboardPage() {
                 <Typography variant="h5" fontWeight="bold" mb={2}>Últimas facturas</Typography>
                 {d.ultimas_facturas.map((f) => (
                   <Box key={f.id} display="flex" alignItems="center" gap={2} py={1} sx={{ cursor: "pointer" }}
-                    borderBottom={`1px solid ${colors.primary[500]}`} onClick={() => navigate(`/facturas/${f.id}`)}>
-                    <Typography width={90} fontWeight="bold" color={colors.greenAccent[500]}>{f.numero}</Typography>
+                    borderBottom={`1px solid ${colors.base[500]}`} onClick={() => navigate(`/facturas/${f.id}`)}>
+                    <Typography width={90} fontWeight="bold" color={colors.acento[500]}>{f.numero}</Typography>
                     <Typography width={90}>{formatoFecha(f.fecha)}</Typography>
                     <Typography flex={1} noWrap>{f.cliente_nombre}</Typography>
                     <Chip size="small" label={ESTADOS_FACTURA[f.estado].label} color={ESTADOS_FACTURA[f.estado].color} />

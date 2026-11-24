@@ -1,10 +1,10 @@
 /* eslint-disable react/prop-types */
-import { Box, Typography, useTheme } from "@mui/material";
-import { tokens } from "../theme";
+import { Box, Typography } from "@mui/material";
+import { useColors } from "../theme";
 
 /** Título de página con acciones opcionales a la derecha. */
 const Header = ({ title, subtitle, children }) => {
-  const colors = tokens(useTheme().palette.mode);
+  const colors = useColors();
   return (
     <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} mb={3}>
       <Box>
@@ -12,7 +12,7 @@ const Header = ({ title, subtitle, children }) => {
           {title}
         </Typography>
         {subtitle && (
-          <Typography variant="h5" color={colors.greenAccent[400]}>
+          <Typography variant="h5" color={colors.acento[400]}>
             {subtitle}
           </Typography>
         )}

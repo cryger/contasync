@@ -1,220 +1,170 @@
-import { createTheme } from "@mui/material";
-import { createContext, useMemo, useState } from "react";
+import { createTheme, useTheme } from "@mui/material";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { aclarar, contraste, escala, esHex, mezclar, oscurecer } from "./utils/color";
 
-// Color Design Tokens
-export const tokens = (mode) => ({
-  ...(mode === "dark"
-    ? {
-        gray: {
-          100: "#e0e0e0",
-          200: "#c2c2c2",
-          300: "#a3a3a3",
-          400: "#858585",
-          500: "#666666",
-          600: "#525252",
-          700: "#3d3d3d",
-          800: "#292929",
-          900: "#141414",
-        },
-        primary: {
-          100: "#d0d1d5",
-          200: "#a1a4ab",
-          300: "#727681",
-          400: "#434957",
-          500: "#141b2d",
-          600: "#101624",
-          700: "#0c101b",
-          800: "#080b12",
-          900: "#040509",
-        },
-        greenAccent: {
-          100: "#dbf5ee",
-          200: "#b7ebde",
-          300: "#94e2cd",
-          400: "#70d8bd",
-          500: "#4cceac",
-          600: "#3da58a",
-          700: "#2e7c67",
-          800: "#1e5245",
-          900: "#0f2922",
-        },
-        redAccent: {
-          100: "#f8dcdb",
-          200: "#f1b9b7",
-          300: "#e99592",
-          400: "#e2726e",
-          500: "#db4f4a",
-          600: "#af3f3b",
-          700: "#832f2c",
-          800: "#58201e",
-          900: "#2c100f",
-        },
-        blueAccent: {
-          100: "#e1e2fe",
-          200: "#c3c6fd",
-          300: "#a4a9fc",
-          400: "#868dfb",
-          500: "#6870fa",
-          600: "#535ac8",
-          700: "#3e4396",
-          800: "#2a2d64",
-          900: "#151632",
-        },
-      }
-    : {
-        gray: {
-          100: "#141414",
-          200: "#292929",
-          300: "#3d3d3d",
-          400: "#525252",
-          500: "#666666",
-          600: "#858585",
-          700: "#a3a3a3",
-          800: "#c2c2c2",
-          900: "#e0e0e0",
-        },
-        primary: {
-          100: "#040509",
-          200: "#080b12",
-          300: "#0c101b",
-          400: "#fcfcfc",
-          500: "#f2f0f0",
-          600: "#434957",
-          700: "#727681",
-          800: "#a1a4ab",
-          900: "#d0d1d5",
-        },
-        greenAccent: {
-          100: "#0f2922",
-          200: "#1e5245",
-          300: "#2e7c67",
-          400: "#3da58a",
-          500: "#4cceac",
-          600: "#70d8bd",
-          700: "#94e2cd",
-          800: "#b7ebde",
-          900: "#dbf5ee",
-        },
-        redAccent: {
-          100: "#2c100f",
-          200: "#58201e",
-          300: "#832f2c",
-          400: "#af3f3b",
-          500: "#db4f4a",
-          600: "#e2726e",
-          700: "#e99592",
-          800: "#f1b9b7",
-          900: "#f8dcdb",
-        },
-        blueAccent: {
-          100: "#e1e2fe",
-          200: "#c3c6fd",
-          300: "#a4a9fc",
-          400: "#868dfb",
-          500: "#6870fa",
-          600: "#535ac8",
-          700: "#3e4396",
-          800: "#2a2d64",
-          900: "#151632",
-        },
-      }),
+/* ------------------------------------------------------------------
+ * Marca: lo que cada negocio personaliza (se guarda en la tabla empresa)
+ * ------------------------------------------------------------------ */
+export const MARCA_DEFECTO = {
+  nombre_comercial: "Contasync",
+  color_acento: "#4cceac",
+  color_secundario: "#6870fa",
+  color_base: "#141b2d",
+  tema_modo: "dark",
+  logo: null,
+};
+
+/** Temas listos para elegir con un clic */
+export const TEMAS_PREDEFINIDOS = [
+  { nombre: "Contasync", color_acento: "#4cceac", color_secundario: "#6870fa", color_base: "#141b2d" },
+  { nombre: "Tecnología", color_acento: "#38bdf8", color_secundario: "#818cf8", color_base: "#0b1220" },
+  { nombre: "Cafetería", color_acento: "#d4a373", color_secundario: "#bc6c25", color_base: "#2b2118" },
+  { nombre: "Restaurante", color_acento: "#f97316", color_secundario: "#facc15", color_base: "#1f1410" },
+  { nombre: "Belleza y spa", color_acento: "#ec4899", color_secundario: "#a855f7", color_base: "#1f1424" },
+  { nombre: "Tienda natural", color_acento: "#22c55e", color_secundario: "#84cc16", color_base: "#0f1f17" },
+  { nombre: "Ferretería", color_acento: "#f59e0b", color_secundario: "#ef4444", color_base: "#1c1917" },
+  { nombre: "Salud", color_acento: "#14b8a6", color_secundario: "#3b82f6", color_base: "#0f1d24" },
+  { nombre: "Elegante", color_acento: "#c9a227", color_secundario: "#94a3b8", color_base: "#111111" },
+  { nombre: "Moda", color_acento: "#e11d48", color_secundario: "#f472b6", color_base: "#18181b" },
+];
+
+/** Toma los campos de marca de la respuesta de /api/empresa, con valores seguros */
+export const extraerMarca = (empresa = {}) => ({
+  nombre_comercial: empresa.nombre_comercial || empresa.razon_social || MARCA_DEFECTO.nombre_comercial,
+  color_acento: esHex(empresa.color_acento) ? empresa.color_acento : MARCA_DEFECTO.color_acento,
+  color_secundario: esHex(empresa.color_secundario) ? empresa.color_secundario : MARCA_DEFECTO.color_secundario,
+  color_base: esHex(empresa.color_base) ? empresa.color_base : MARCA_DEFECTO.color_base,
+  tema_modo: empresa.tema_modo === "light" ? "light" : "dark",
+  logo: empresa.logo || null,
 });
 
-// Mui Theme Settings
-export const themeSettings = (mode) => {
-  const colors = tokens(mode);
+/* ------------------------------------------------------------------
+ * Tokens de color: escalas 100–900 generadas desde la marca
+ *   base       → fondos y paneles
+ *   acento     → color principal de la marca (botones, cifras, enlaces)
+ *   secundario → encabezados de tablas, elementos activos
+ *   rojo       → gastos, errores
+ *   gray       → textos
+ * ------------------------------------------------------------------ */
+export const tokens = (mode, marca = MARCA_DEFECTO) => {
+  const { color_base: b, color_acento: a, color_secundario: s } = marca;
+  const oscuro = mode === "dark";
+
+  const base = oscuro
+    ? {
+        100: aclarar(b, 0.8), 200: aclarar(b, 0.6), 300: aclarar(b, 0.4),
+        400: aclarar(b, 0.18), // paneles
+        500: b, // fondo
+        600: oscurecer(b, 0.2), 700: oscurecer(b, 0.4), 800: oscurecer(b, 0.6), 900: oscurecer(b, 0.8),
+      }
+    : {
+        100: oscurecer(b, 0.5), 200: oscurecer(b, 0.3), 300: b,
+        400: aclarar(b, 0.985), // paneles
+        500: aclarar(b, 0.93), // fondo
+        600: aclarar(b, 0.75), 700: aclarar(b, 0.6), 800: aclarar(b, 0.45), 900: aclarar(b, 0.3),
+      };
+
+  const gray = oscuro
+    ? { 100: "#e0e0e0", 200: "#c2c2c2", 300: "#a3a3a3", 400: "#858585", 500: "#666666", 600: "#525252", 700: "#3d3d3d", 800: "#292929", 900: "#141414" }
+    : { 100: "#141414", 200: "#292929", 300: "#525252", 400: "#666666", 500: "#858585", 600: "#a3a3a3", 700: "#c2c2c2", 800: "#e0e0e0", 900: "#f5f5f5" };
 
   return {
+    base,
+    gray,
+    acento: escala(a, !oscuro),
+    secundario: escala(s, !oscuro),
+    rojo: escala("#db4f4a", !oscuro),
+    texto_sobre_acento: contraste(a),
+    texto_sobre_secundario: contraste(s),
+    texto_sobre_base: contraste(b),
+  };
+};
+
+/* ------------------------------------------------------------------
+ * Tema de MUI
+ * ------------------------------------------------------------------ */
+const fuente = ["Source Sans 3", "sans-serif"].join(",");
+
+export const themeSettings = (mode, marca) => {
+  const colores = tokens(mode, marca);
+  const oscuro = mode === "dark";
+  return {
+    colores, // accesible con useColors()
     palette: {
-      mode: mode,
-      ...(mode === "dark"
-        ? {
-            primary: {
-              main: colors.primary[500],
-            },
-            secondary: {
-              main: colors.greenAccent[500],
-            },
-            neutral: {
-              dark: colors.gray[700],
-              main: colors.gray[500],
-              light: colors.gray[100],
-            },
-            background: {
-              default: colors.primary[500],
-            },
-          }
-        : {
-            primary: {
-              main: colors.primary[100],
-            },
-            secondary: {
-              main: colors.greenAccent[500],
-            },
-            neutral: {
-              dark: colors.gray[700],
-              main: colors.gray[500],
-              light: colors.gray[100],
-            },
-            background: {
-              default: colors.primary[500],
-            },
-          }),
+      mode,
+      primary: { main: oscuro ? colores.base[400] : colores.base[300] },
+      secondary: { main: marca.color_acento, contrastText: colores.texto_sobre_acento },
+      info: { main: marca.color_secundario },
+      neutral: { dark: colores.gray[700], main: colores.gray[500], light: colores.gray[100] },
+      background: {
+        default: colores.base[500],
+        paper: oscuro ? mezclar(marca.color_base, "#ffffff", 0.1) : "#ffffff",
+      },
     },
     typography: {
-      fontFamily: ["Source Sans 3", "sans-serif"].join(","),
+      fontFamily: fuente,
       fontSize: 12,
-      h1: {
-        fontFamily: ["Source Sans 3", "sans-serif"].join(","),
-        fontSize: 40,
-      },
-      h2: {
-        fontFamily: ["Source Sans 3", "sans-serif"].join(","),
-        fontSize: 32,
-      },
-      h3: {
-        fontFamily: ["Source Sans 3", "sans-serif"].join(","),
-        fontSize: 24,
-      },
-      h4: {
-        fontFamily: ["Source Sans 3", "sans-serif"].join(","),
-        fontSize: 20,
-      },
-      h5: {
-        fontFamily: ["Source Sans 3", "sans-serif"].join(","),
-        fontSize: 16,
-      },
-      h6: {
-        fontFamily: ["Source Sans 3", "sans-serif"].join(","),
-        fontSize: 14,
-      },
+      h1: { fontFamily: fuente, fontSize: 40 },
+      h2: { fontFamily: fuente, fontSize: 32 },
+      h3: { fontFamily: fuente, fontSize: 24 },
+      h4: { fontFamily: fuente, fontSize: 20 },
+      h5: { fontFamily: fuente, fontSize: 16 },
+      h6: { fontFamily: fuente, fontSize: 14 },
+    },
+    components: {
+      MuiPaper: { styleOverrides: { root: { backgroundImage: "none" } } },
     },
   };
 };
 
-// Context For Color Mode
-export const ColorModeContext = createContext({
-  toggleColorMode: () => {},
-});
+/* ------------------------------------------------------------------
+ * Contextos y hooks
+ * ------------------------------------------------------------------ */
+export const ColorModeContext = createContext({ toggleColorMode: () => {} });
+export const MarcaContext = createContext({ marca: MARCA_DEFECTO, setMarca: () => {} });
 
-export const useMode = () => {
-  const [mode, setMode] = useState(() => {
-    try { return localStorage.getItem("contasync-modo") || "dark"; } catch { return "dark"; }
+/** Colores del tema actual: const colors = useColors(); colors.acento[500] */
+export const useColors = () => useTheme().colores;
+
+/** Marca actual y función para cambiarla (vista previa en vivo) */
+export const useMarca = () => useContext(MarcaContext);
+
+const CLAVE_MODO = "contasync-modo";
+
+/**
+ * Modo claro/oscuro: si el usuario lo cambió en este navegador se respeta,
+ * si no, se usa el modo por defecto que definió el negocio.
+ */
+export const useMode = (marca) => {
+  const [preferido, setPreferido] = useState(() => {
+    try { return localStorage.getItem(CLAVE_MODO); } catch { return null; }
   });
+  const mode = preferido || marca.tema_modo || "dark";
 
   const colorMode = useMemo(
     () => ({
       toggleColorMode: () =>
-        setMode((prev) => {
-          const next = prev === "light" ? "dark" : "light";
-          try { localStorage.setItem("contasync-modo", next); } catch { /* sin storage */ }
+        setPreferido(() => {
+          const next = mode === "light" ? "dark" : "light";
+          try { localStorage.setItem(CLAVE_MODO, next); } catch { /* sin storage */ }
           return next;
         }),
+      reiniciarModo: () => {
+        try { localStorage.removeItem(CLAVE_MODO); } catch { /* sin storage */ }
+        setPreferido(null);
+      },
     }),
-    []
+    [mode]
   );
 
-  const theme = useMemo(() => createTheme(themeSettings(mode)), [mode]);
+  const theme = useMemo(() => createTheme(themeSettings(mode, marca)), [mode, marca]);
+
+  // Título de la pestaña y favicon con la marca del negocio
+  useEffect(() => {
+    document.title = `${marca.nombre_comercial} · Facturación`;
+    const icono = document.querySelector("link[rel='icon']");
+    if (icono) icono.href = marca.logo || "/logo_contasync_svg.svg";
+  }, [marca.nombre_comercial, marca.logo]);
 
   return [theme, colorMode];
 };

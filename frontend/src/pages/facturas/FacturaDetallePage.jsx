@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  Alert, Box, Button, Chip, Divider, Grid, Table, TableBody, TableCell, TableHead, TableRow, Typography, useTheme,
+  Alert, Box, Button, Chip, Divider, Grid, Table, TableBody, TableCell, TableHead, TableRow, Typography,
 } from "@mui/material";
 import { ArrowBackOutlined, BlockOutlined, CheckCircleOutline, PictureAsPdfOutlined } from "@mui/icons-material";
 import Header from "../../components/Header";
@@ -13,13 +13,13 @@ import { mensajeError } from "../../api/client";
 import { ESTADOS_FACTURA } from "../../utils/factura";
 import { formatoFecha, formatoMoneda } from "../../utils/format";
 import { descargarFacturaPDF } from "../../utils/pdfFactura";
-import { tokens } from "../../theme";
+import { useColors } from "../../theme";
 
 export default function FacturaDetallePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const notify = useNotify();
-  const colors = tokens(useTheme().palette.mode);
+  const colors = useColors();
   const [anular, setAnular] = useState(false);
   const { data, setData, cargando, error } = useCarga(
     () => Promise.all([facturasApi.obtener(id), empresaApi.obtener()]), [id],
@@ -59,7 +59,7 @@ export default function FacturaDetallePage() {
         )}
       </Header>
 
-      <Box bgcolor={colors.primary[400]} p={3} borderRadius={2}>
+      <Box bgcolor={colors.base[400]} p={3} borderRadius={2}>
         <Grid container spacing={2} mb={2}>
           <Grid item xs={12} md={6}>
             <Typography variant="h6" color={colors.gray[300]}>Cliente</Typography>
@@ -113,7 +113,7 @@ export default function FacturaDetallePage() {
           <Divider sx={{ my: 1 }} />
           <Box display="flex" justifyContent="space-between">
             <Typography variant="h4">Total</Typography>
-            <Typography variant="h3" fontWeight="bold" color={colors.greenAccent[500]}>{formatoMoneda(f.total)}</Typography>
+            <Typography variant="h3" fontWeight="bold" color={colors.acento[500]}>{formatoMoneda(f.total)}</Typography>
           </Box>
         </Box>
         {f.notas && <Typography mt={2} color={colors.gray[300]}>Notas: {f.notas}</Typography>}

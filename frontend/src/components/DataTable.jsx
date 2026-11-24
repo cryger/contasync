@@ -1,7 +1,8 @@
 /* eslint-disable react/prop-types */
-import { Box, useTheme } from "@mui/material";
+import { Box } from "@mui/material";
 import { DataGrid, GridToolbarQuickFilter } from "@mui/x-data-grid";
-import { tokens } from "../theme";
+import { useColors } from "../theme";
+import { contraste } from "../utils/color";
 
 const Toolbar = () => (
   <Box p={1}>
@@ -11,15 +12,19 @@ const Toolbar = () => (
 
 /** DataGrid con el estilo de la app, búsqueda rápida y textos en español. */
 const DataTable = ({ height = "70vh", ...props }) => {
-  const colors = tokens(useTheme().palette.mode);
+  const colors = useColors();
+  const encabezado = colors.secundario[600];
+  const textoEncabezado = contraste(encabezado);
   return (
     <Box
       height={height}
       sx={{
         "& .MuiDataGrid-root": { border: "none" },
-        "& .MuiDataGrid-columnHeaders": { backgroundColor: colors.blueAccent[700], borderBottom: "none" },
-        "& .MuiDataGrid-virtualScroller": { backgroundColor: colors.primary[400] },
-        "& .MuiDataGrid-footerContainer": { borderTop: "none", backgroundColor: colors.blueAccent[700] },
+        "& .MuiDataGrid-columnHeaders": { backgroundColor: encabezado, color: textoEncabezado, borderBottom: "none" },
+        "& .MuiDataGrid-columnHeaders .MuiSvgIcon-root, & .MuiDataGrid-columnHeaders .MuiButtonBase-root": { color: textoEncabezado },
+        "& .MuiDataGrid-virtualScroller": { backgroundColor: colors.base[400] },
+        "& .MuiDataGrid-footerContainer": { borderTop: "none", backgroundColor: encabezado },
+        "& .MuiDataGrid-footerContainer, & .MuiDataGrid-footerContainer .MuiTablePagination-root, & .MuiDataGrid-footerContainer .MuiSvgIcon-root": { color: textoEncabezado },
         "& .MuiDataGrid-toolbarContainer, & .MuiDataGrid-toolbarContainer + div": {},
       }}
     >

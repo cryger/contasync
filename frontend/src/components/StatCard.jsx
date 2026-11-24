@@ -1,12 +1,12 @@
 /* eslint-disable react/prop-types */
-import { Box, Typography, useTheme } from "@mui/material";
-import { tokens } from "../theme";
+import { Box, Typography } from "@mui/material";
+import { useColors } from "../theme";
 
 const StatCard = ({ title, value, subtitle, icon, tone = "green" }) => {
-  const colors = tokens(useTheme().palette.mode);
-  const accent = tone === "red" ? colors.redAccent[500] : tone === "blue" ? colors.blueAccent[400] : colors.greenAccent[500];
+  const colors = useColors();
+  const accent = tone === "red" ? colors.rojo[500] : tone === "blue" ? colors.secundario[400] : colors.acento[500];
   return (
-    <Box bgcolor={colors.primary[400]} p={2.5} borderRadius={2} display="flex" gap={2} alignItems="center" minHeight={110}>
+    <Box bgcolor={colors.base[400]} p={2.5} borderRadius={2} display="flex" gap={2} alignItems="center" minHeight={110}>
       <Box sx={{ color: accent, "& svg": { fontSize: 34 } }}>{icon}</Box>
       <Box minWidth={0}>
         <Typography variant="h6" color={colors.gray[300]}>{title}</Typography>

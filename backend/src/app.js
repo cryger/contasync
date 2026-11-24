@@ -5,7 +5,7 @@ const { errorHandler, notFound } = require('./shared/errorHandler');
 const app = express();
 
 app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '2mb' })); // el logo viaja como data URL
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 

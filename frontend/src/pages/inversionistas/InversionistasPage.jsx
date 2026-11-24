@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   Alert, Box, Dialog, DialogContent, DialogTitle, Grid, IconButton, LinearProgress, MenuItem, Tab, Table,
-  TableBody, TableCell, TableFooter, TableHead, TableRow, Tabs, TextField, Tooltip, Typography, useTheme, Button,
+  TableBody, TableCell, TableFooter, TableHead, TableRow, Tabs, TextField, Tooltip, Typography, Button,
 } from "@mui/material";
 import {
   AccountBalanceWalletOutlined, DeleteOutline, PercentOutlined, PaidOutlined, SavingsOutlined, TrendingDownOutlined,
@@ -15,11 +15,11 @@ import useCarga from "../../hooks/useCarga";
 import { inversionistasApi } from "../../api";
 import { mensajeError } from "../../api/client";
 import { formatoFecha, formatoMoneda, formatoPorcentaje, hoy, inicioDeMes, leerNumero } from "../../utils/format";
-import { tokens } from "../../theme";
+import { useColors } from "../../theme";
 
 /* ---------- Pestaña 1: reparto de utilidades ---------- */
 function Reparto() {
-  const colors = tokens(useTheme().palette.mode);
+  const colors = useColors();
   const [filtros, setFiltros] = useState({ desde: inicioDeMes(), hasta: hoy(), criterio: "causado" });
   const { data: r, cargando, error } = useCarga(() => inversionistasApi.reparto(filtros), [filtros]);
   const tonoUtilidad = (r?.utilidad ?? 0) < 0 ? "red" : "green";
@@ -55,7 +55,7 @@ function Reparto() {
             </Grid>
           </Grid>
 
-          <Box bgcolor={colors.primary[400]} p={2.5} borderRadius={2} overflow="auto">
+          <Box bgcolor={colors.base[400]} p={2.5} borderRadius={2} overflow="auto">
             <Typography variant="h4" fontWeight="bold" mb={0.5}>Reparto por inversionista</Typography>
             <Typography variant="body2" color={colors.gray[300]} mb={2}>
               Participación = capital aportado ÷ capital total (aportes hasta la fecha final) · Ganancia = utilidad × participación ·
@@ -86,7 +86,7 @@ function Reparto() {
                           <Typography width={64} textAlign="right">{formatoPorcentaje(i.participacion)}</Typography>
                         </Box>
                       </TableCell>
-                      <TableCell align="right" sx={{ color: i.ganancia < 0 ? colors.redAccent[500] : colors.greenAccent[500], fontWeight: "bold" }}>
+                      <TableCell align="right" sx={{ color: i.ganancia < 0 ? colors.rojo[500] : colors.acento[500], fontWeight: "bold" }}>
                         {formatoMoneda(i.ganancia)}
                       </TableCell>
                       <TableCell align="right">{formatoPorcentaje(i.rentabilidad)}</TableCell>

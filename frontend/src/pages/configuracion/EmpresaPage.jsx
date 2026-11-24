@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Box, Button, Grid, TextField, useTheme } from "@mui/material";
+import { Box, Button, Grid, TextField } from "@mui/material";
 import Header from "../../components/Header";
 import { useNotify } from "../../components/Notifier";
 import { empresaApi } from "../../api";
 import { mensajeError } from "../../api/client";
-import { tokens } from "../../theme";
+import { useColors } from "../../theme";
 
 const CAMPOS = [
   { name: "razon_social", label: "Razón social", xs: 8, required: true },
@@ -20,7 +20,7 @@ const CAMPOS = [
 ];
 
 export default function EmpresaPage() {
-  const colors = tokens(useTheme().palette.mode);
+  const colors = useColors();
   const notify = useNotify();
   const [valores, setValores] = useState(null);
 
@@ -43,7 +43,7 @@ export default function EmpresaPage() {
   return (
     <Box>
       <Header title="Empresa" subtitle="Datos que aparecen en tus facturas y numeración" />
-      <Box component="form" onSubmit={guardar} bgcolor={colors.primary[400]} p={3} borderRadius={2} maxWidth={900}>
+      <Box component="form" onSubmit={guardar} bgcolor={colors.base[400]} p={3} borderRadius={2} maxWidth={900}>
         <Grid container spacing={2}>
           {CAMPOS.map((c) => (
             <Grid item xs={12} md={c.xs} key={c.name}>

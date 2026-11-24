@@ -21,6 +21,14 @@ CREATE TABLE IF NOT EXISTS empresa (
 );
 INSERT INTO empresa (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 
+-- Apariencia / marca del negocio (interfaz y PDF de la factura)
+ALTER TABLE empresa ADD COLUMN IF NOT EXISTS nombre_comercial  VARCHAR(80);
+ALTER TABLE empresa ADD COLUMN IF NOT EXISTS color_acento      CHAR(7)     NOT NULL DEFAULT '#4cceac';
+ALTER TABLE empresa ADD COLUMN IF NOT EXISTS color_secundario  CHAR(7)     NOT NULL DEFAULT '#6870fa';
+ALTER TABLE empresa ADD COLUMN IF NOT EXISTS color_base        CHAR(7)     NOT NULL DEFAULT '#141b2d';
+ALTER TABLE empresa ADD COLUMN IF NOT EXISTS tema_modo         VARCHAR(5)  NOT NULL DEFAULT 'dark';
+ALTER TABLE empresa ADD COLUMN IF NOT EXISTS logo              TEXT;       -- imagen PNG en data URL (máx. ~400 KB)
+
 CREATE TABLE IF NOT EXISTS clientes (
   id               SERIAL PRIMARY KEY,
   tipo_documento   VARCHAR(10)  NOT NULL DEFAULT 'CC',
