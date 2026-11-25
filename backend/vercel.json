@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
+  "functions": {
+    "api/index.js": { "includeFiles": "database/**", "maxDuration": 30 }
+  },
+  "crons": [{ "path": "/api/cron/cobros", "schedule": "0 11 * * *" }]
+}

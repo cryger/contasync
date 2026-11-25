@@ -6,13 +6,20 @@ types.setTypeParser(1700, (v) => (v === null ? null : parseFloat(v)));
 // DATE se devuelve tal cual (YYYY-MM-DD) para evitar corrimientos de zona horaria
 types.setTypeParser(1082, (v) => v);
 
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: Number(process.env.DB_PORT) || 5432,
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME || 'contasync_facturacion',
-});
+// En la nube (Vercel + Neon) llega una sola URL de conexión; en local se usan DB_HOST, DB_PORT, etc.
+const urlConexion = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+const pool = new Pool(
+  urlConexion
+    ? { connectionString: urlConexion, ssl: { rejectUnauthorized: false }, max: 3, idleTimeoutMillis: 10000 }
+    : {
+        host: process.env.DB_HOST || 'localhost',
+        port: Number(process.env.DB_PORT) || 5432,
+        user: process.env.DB_USER || 'postgres',
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME || 'contasync_facturacion',
+      },
+);
 
 pool.on('error', (err) => console.error('Error en el pool de PostgreSQL:', err.message));
 

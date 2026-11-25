@@ -6,12 +6,34 @@ const empresaRoutes = require('./modules/empresa/empresa.routes');
 
 const app = express();
 
-app.set('trust proxy', 'loopback'); // para leer bien la IP si se publica detrás de un proxy local
+app.set('trust proxy', process.env.VERCEL ? true : 'loopback'); // IP real del cliente detrás del proxy
 app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
 app.use(express.json({ limit: '2mb' })); // el logo viaja como data URL
 
+// En Vercel la base se prepara sola en el primer request (crea tablas si faltan)
+if (process.env.VERCEL) {
+  const { asegurarEsquema } = require('../database/esquema');
+  app.use((req, res, next) => asegurarEsquema().then(() => next(), next));
+}
+
 /* ---------- Rutas públicas ---------- */
 app.get('/api/health', (req, res) => res.json({ ok: true }));
+
+// Cron de Vercel (diario): genera los cobros mensuales.
+// Es seguro aunque se llame de más: solo emite lo que ya venció y nunca duplica un mes.
+// Si defines CRON_SECRET en Vercel, solo se acepta la llamada que trae esa clave (Vercel la envía sola).
+app.get('/api/cron/cobros', async (req, res, next) => {
+  try {
+    const secreto = process.env.CRON_SECRET;
+    if (secreto && req.headers.authorization !== `Bearer ${secreto}`) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+    const r = await require('./modules/cobros/cobros.service').generarPendientes();
+    res.json({ generadas: r.generadas.length, errores: r.errores });
+  } catch (err) {
+    next(err);
+  }
+});
 app.use('/api/auth', require('./modules/auth/auth.routes'));
 app.get('/api/marca', empresaRoutes.marca); // logo y colores para la pantalla de login
 

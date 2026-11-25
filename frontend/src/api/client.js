@@ -35,7 +35,8 @@ client.interceptors.response.use(
   (err) => {
     const url = err.config?.url || "";
     if (err.response?.status === 401 && !url.startsWith("/auth/login")) {
-      window.dispatchEvent(new CustomEvent("contasync:sesion-expirada", { detail: err.response.data?.error }));
+      const detalle = err.response.data?.error;
+      window.dispatchEvent(new CustomEvent("contasync:sesion-expirada", { detail: typeof detalle === "string" ? detalle : undefined }));
     }
     return Promise.reject(err);
   }
@@ -43,7 +44,9 @@ client.interceptors.response.use(
 
 /** Extrae un mensaje legible de cualquier error de axios. */
 export const mensajeError = (err) => {
-  if (err?.response?.data?.error) return err.response.data.error;
+  // Solo se muestran mensajes de texto: algunos servidores (p. ej. el 404 de Vercel) mandan "error" como objeto
+  const msg = err?.response?.data?.error;
+  if (typeof msg === "string") return msg;
   const tipo = String(err?.response?.headers?.["content-type"] || "");
   // Sin backend (p. ej. el frontend publicado sin VITE_API_URL) el servidor responde 404/HTML en vez de JSON
   if (err?.code === "ERR_NETWORK" || [404, 405, 502, 503, 504].includes(err?.response?.status) || tipo.includes("text/html")) {
