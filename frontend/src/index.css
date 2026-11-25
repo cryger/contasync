@@ -1,0 +1,28 @@
+/* Estilos globales mínimos: el resto vive en theme.js (MuiCssBaseline) */
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation; /* elimina el retraso de 300 ms en pantallas táctiles */
+}
+
+/* Enlace "Saltar al contenido" para teclado */
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -48px;
+  z-index: 2000;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 150ms ease;
+}
+.skip-link:focus {
+  top: 12px;
+}
