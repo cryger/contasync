@@ -39,12 +39,23 @@ const CAMPOS = {
   logo,
 };
 
+const { requireRol } = require('../auth/auth.middleware');
+
+/** Público: solo lo necesario para pintar la pantalla de login con la marca del negocio */
+const marca = asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT razon_social, nombre_comercial, color_acento, color_secundario, color_base, tema_modo, logo
+     FROM empresa WHERE id = 1`,
+  );
+  res.json(rows[0] || {});
+});
+
 router.get('/', asyncHandler(async (req, res) => {
   const { rows } = await pool.query('SELECT * FROM empresa WHERE id = 1');
   res.json(rows[0]);
 }));
 
-router.put('/', asyncHandler(async (req, res) => {
+router.put('/', requireRol('admin'), asyncHandler(async (req, res) => {
   const cols = Object.keys(CAMPOS).filter((c) => c in req.body);
   const valores = cols.map((c) => CAMPOS[c](req.body[c]));
   if (!cols.length) return res.status(400).json({ error: 'No hay campos para actualizar' });
@@ -56,3 +67,4 @@ router.put('/', asyncHandler(async (req, res) => {
 }));
 
 module.exports = router;
+module.exports.marca = marca;

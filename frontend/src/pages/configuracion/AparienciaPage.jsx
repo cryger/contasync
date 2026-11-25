@@ -12,6 +12,7 @@ import { mensajeError } from "../../api/client";
 import { ColorModeContext, MARCA_DEFECTO, TEMAS_PREDEFINIDOS, extraerMarca, useColors, useMarca } from "../../theme";
 import { contraste, esHex, luminancia } from "../../utils/color";
 import { descargarFacturaPDF, FACTURA_EJEMPLO } from "../../utils/pdfFactura";
+import { estiloPanel } from "../../components/Panel";
 import FacturaPreview from "./FacturaPreview";
 
 const COLORES = [
@@ -109,7 +110,7 @@ export default function AparienciaPage() {
   const acentoMuyOscuro = esHex(borrador.color_acento) && esHex(borrador.color_base) &&
     Math.abs(luminancia(borrador.color_acento) - luminancia(borrador.color_base)) < 0.12;
 
-  const panel = { bgcolor: colors.base[400], p: 2.5, borderRadius: 2, mb: 2.5 };
+  const panel = { ...estiloPanel(colors), mb: 2.5 };
 
   return (
     <Box>
@@ -131,7 +132,7 @@ export default function AparienciaPage() {
         <Grid item xs={12} lg={7}>
           {/* Identidad */}
           <Box sx={panel}>
-            <Typography variant="h4" fontWeight="bold" mb={2}>Identidad</Typography>
+            <Typography component="h2" variant="h4" mb={2}>Identidad</Typography>
             <Grid container spacing={2} alignItems="center">
               <Grid item xs={12} sm="auto">
                 <Box width={96} height={96} borderRadius={2} bgcolor="#fff" display="flex" alignItems="center" justifyContent="center"
@@ -165,7 +166,7 @@ export default function AparienciaPage() {
 
           {/* Temas listos */}
           <Box sx={panel}>
-            <Typography variant="h4" fontWeight="bold" mb={0.5}>Temas listos</Typography>
+            <Typography component="h2" variant="h4" mb={0.5}>Temas listos</Typography>
             <Typography variant="body2" color={colors.gray[300]} mb={2}>Elige uno como punto de partida y ajústalo abajo.</Typography>
             <Grid container spacing={1.5}>
               {TEMAS_PREDEFINIDOS.map((t) => {
@@ -194,7 +195,7 @@ export default function AparienciaPage() {
 
           {/* Colores */}
           <Box sx={panel}>
-            <Typography variant="h4" fontWeight="bold" mb={2}>Colores</Typography>
+            <Typography component="h2" variant="h4" mb={2}>Colores</Typography>
             <Grid container spacing={2}>
               {COLORES.map(({ campo, label, ayuda }) => (
                 <Grid item xs={12} md={4} key={campo}>
@@ -226,7 +227,7 @@ export default function AparienciaPage() {
 
           {/* Modo */}
           <Box sx={panel}>
-            <Typography variant="h4" fontWeight="bold" mb={0.5}>Modo por defecto</Typography>
+            <Typography component="h2" variant="h4" mb={0.5}>Modo por defecto</Typography>
             <Typography variant="body2" color={colors.gray[300]} mb={2}>
               Así abre el sistema. Cada persona puede cambiarlo con el ícono de sol/luna arriba.
             </Typography>
@@ -246,7 +247,7 @@ export default function AparienciaPage() {
         <Grid item xs={12} lg={5}>
           <Box position={{ lg: "sticky" }} top={0}>
             <Box sx={{ ...panel, mb: 0 }}>
-              <Typography variant="h4" fontWeight="bold" mb={0.5}>Así se verá tu factura</Typography>
+              <Typography component="h2" variant="h4" mb={0.5}>Así se verá tu factura</Typography>
               <Typography variant="body2" color={colors.gray[300]} mb={2}>
                 Vista previa en vivo. Usa “Factura de ejemplo” para descargar el PDF real.
               </Typography>

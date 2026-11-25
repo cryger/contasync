@@ -4,7 +4,7 @@
   "private": true,
   "description": "Facturación rápida y reparto de utilidades a inversionistas — Digital Code Group",
   "scripts": {
-    "instalar": "npm install && npm --prefix backend install && npm --prefix frontend install",
+    "instalar": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "dev": "concurrently -n api,web -c blue,green \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
     "build": "npm --prefix frontend run build",
     "db:init": "npm --prefix backend run db:init",

@@ -8,11 +8,12 @@ const ESTADOS = ['pendiente', 'pagada', 'anulada'];
 const FORMAS_PAGO = ['contado', 'credito'];
 
 const SELECT_FACTURA = `
-  SELECT f.*, c.nombre AS cliente_nombre, c.identificacion AS cliente_identificacion,
+  SELECT f.*, u.nombre AS usuario_nombre, c.nombre AS cliente_nombre, c.identificacion AS cliente_identificacion,
          c.tipo_documento AS cliente_tipo_documento, c.telefono AS cliente_telefono,
          c.email AS cliente_email, c.direccion AS cliente_direccion
   FROM facturas f
-  JOIN clientes c ON c.id = f.cliente_id`;
+  JOIN clientes c ON c.id = f.cliente_id
+  LEFT JOIN usuarios u ON u.id = f.usuario_id`;
 
 /** Valida y normaliza los ítems que llegan del cliente. */
 function normalizarItems(items) {
@@ -32,7 +33,7 @@ function normalizarItems(items) {
   });
 }
 
-async function listar({ desde, hasta, estado, cliente_id, q, limite = 200 } = {}) {
+async function listar({ desde, hasta, estado, cliente_id, q, cobro, enviada, limite = 200 } = {}) {
   const cond = [];
   const params = [];
   const add = (sql, val) => { params.push(val); cond.push(sql.replace('?', `$${params.length}`)); };
@@ -41,6 +42,9 @@ async function listar({ desde, hasta, estado, cliente_id, q, limite = 200 } = {}
   if (hasta) add('f.fecha <= ?', v.optionalDate(hasta));
   if (estado) add('f.estado = ?', v.oneOf(estado, ESTADOS, 'estado'));
   if (cliente_id) add('f.cliente_id = ?', Number(cliente_id));
+  if (cobro === 'mensual') cond.push('f.suscripcion_id IS NOT NULL');
+  if (enviada === 'no') cond.push("f.enviada_en IS NULL AND f.estado <> 'anulada'");
+  if (enviada === 'si') cond.push('f.enviada_en IS NOT NULL');
   if (q) add('(f.numero ILIKE ? OR c.nombre ILIKE $' + (params.length + 1) + ')', `%${q}%`);
 
   params.push(Math.min(Number(limite) || 200, 1000));
@@ -91,12 +95,13 @@ async function crear(datos) {
 
     const { rows: [fac] } = await db.query(
       `INSERT INTO facturas (numero, cliente_id, fecha, vencimiento, forma_pago, medio_pago, estado,
-                             subtotal, descuento, iva, total, notas)
-       VALUES ($1, $2, COALESCE($3::date, CURRENT_DATE), $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                             subtotal, descuento, iva, total, notas, usuario_id, suscripcion_id, periodo)
+       VALUES ($1, $2, COALESCE($3::date, CURRENT_DATE), $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING id`,
       [numero, clienteId, v.optionalDate(datos.fecha), v.optionalDate(datos.vencimiento), formaPago,
         v.optionalText(datos.medio_pago) || 'efectivo', estado,
-        calculo.subtotal, calculo.descuento, calculo.iva, calculo.total, v.optionalText(datos.notas)],
+        calculo.subtotal, calculo.descuento, calculo.iva, calculo.total, v.optionalText(datos.notas),
+        datos.usuario_id || null, datos.suscripcion_id || null, datos.periodo || null],
     );
 
     for (const it of calculo.items) {
@@ -123,4 +128,13 @@ async function cambiarEstado(id, estado) {
   return obtener(id);
 }
 
-module.exports = { listar, obtener, crear, cambiarEstado };
+/** Marca (o desmarca) que la factura ya se le envió al cliente */
+async function marcarEnviada(id, enviada = true) {
+  const { rowCount } = await pool.query(
+    `UPDATE facturas SET enviada_en = ${enviada ? 'NOW()' : 'NULL'} WHERE id = $1`, [id],
+  );
+  if (!rowCount) throw new HttpError(404, 'Factura no encontrada');
+  return obtener(id);
+}
+
+module.exports = { listar, obtener, crear, cambiarEstado, marcarEnviada };

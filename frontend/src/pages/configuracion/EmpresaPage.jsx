@@ -4,7 +4,8 @@ import Header from "../../components/Header";
 import { useNotify } from "../../components/Notifier";
 import { empresaApi } from "../../api";
 import { mensajeError } from "../../api/client";
-import { useColors } from "../../theme";
+import { estiloPanel } from "../../components/Panel";
+import { useColors, useMarca } from "../../theme";
 
 const CAMPOS = [
   { name: "razon_social", label: "Razón social", xs: 8, required: true },
@@ -22,6 +23,7 @@ const CAMPOS = [
 export default function EmpresaPage() {
   const colors = useColors();
   const notify = useNotify();
+  const { recargarMarca } = useMarca();
   const [valores, setValores] = useState(null);
 
   useEffect(() => {
@@ -32,6 +34,7 @@ export default function EmpresaPage() {
     e.preventDefault();
     try {
       setValores(await empresaApi.actualizar(valores));
+      recargarMarca();
       notify("Datos de la empresa guardados");
     } catch (err) {
       notify(mensajeError(err), "error");
@@ -43,7 +46,7 @@ export default function EmpresaPage() {
   return (
     <Box>
       <Header title="Empresa" subtitle="Datos que aparecen en tus facturas y numeración" />
-      <Box component="form" onSubmit={guardar} bgcolor={colors.base[400]} p={3} borderRadius={2} maxWidth={900}>
+      <Box component="form" onSubmit={guardar} {...estiloPanel(colors, 3)} maxWidth={900}>
         <Grid container spacing={2}>
           {CAMPOS.map((c) => (
             <Grid item xs={12} md={c.xs} key={c.name}>

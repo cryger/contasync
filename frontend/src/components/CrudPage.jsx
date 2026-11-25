@@ -13,9 +13,10 @@ import { mensajeError } from "../api/client";
 /**
  * Página de listado + crear/editar/eliminar para recursos simples.
  * Props: title, subtitle, singular, api, columns, campos, nuevoInicial, aFormulario(row), extraHeader,
- *        accionesExtra(row) → botones adicionales por fila, recargarKey → cambia para forzar recarga
+ *        accionesExtra(row) → botones adicionales por fila, recargarKey → cambia para forzar recarga,
+ *        soloLectura → oculta crear/editar/eliminar, campos puede ser función (esEdicion) => [...]
  */
-const CrudPage = ({ title, subtitle, singular, api, columns, campos, nuevoInicial = {}, aFormulario = (r) => r, extraHeader, onCambio, accionesExtra, recargarKey }) => {
+const CrudPage = ({ title, subtitle, singular, api, columns, campos, nuevoInicial = {}, aFormulario = (r) => r, extraHeader, onCambio, accionesExtra, recargarKey, soloLectura = false, mensajeEliminar }) => {
   const notify = useNotify();
   const { data: filas, cargando, error, recargar } = useCarga(() => api.listar(), [recargarKey], []);
   const [editando, setEditando] = useState(null); // null | {} nuevo | fila
@@ -36,8 +37,8 @@ const CrudPage = ({ title, subtitle, singular, api, columns, campos, nuevoInicia
 
   const eliminar = async () => {
     try {
-      await api.eliminar(borrando.id);
-      notify(`${singular} eliminado`);
+      const r = await api.eliminar(borrando.id);
+      notify(r?.desactivado ? `${singular} desactivado (tiene historial)` : `${singular} eliminado`);
       setBorrando(null);
       await recargar();
       onCambio?.();
@@ -47,7 +48,7 @@ const CrudPage = ({ title, subtitle, singular, api, columns, campos, nuevoInicia
     }
   };
 
-  const columnas = [
+  const columnas = soloLectura ? columns : [
     ...columns,
     {
       field: "_acciones",
@@ -58,8 +59,8 @@ const CrudPage = ({ title, subtitle, singular, api, columns, campos, nuevoInicia
       renderCell: ({ row }) => (
         <Box>
           {accionesExtra?.(row)}
-          <Tooltip title="Editar"><IconButton size="small" onClick={() => setEditando(row)}><EditOutlined fontSize="small" /></IconButton></Tooltip>
-          <Tooltip title="Eliminar"><IconButton size="small" onClick={() => setBorrando(row)}><DeleteOutline fontSize="small" /></IconButton></Tooltip>
+          <Tooltip title="Editar"><IconButton size="small" aria-label={`Editar plan de ${row.cliente_nombre}`} onClick={() => setEditando(row)}><EditOutlined fontSize="small" /></IconButton></Tooltip>
+          <Tooltip title="Eliminar"><IconButton size="small" aria-label={`Eliminar plan de ${row.cliente_nombre}`} onClick={() => setBorrando(row)}><DeleteOutline fontSize="small" /></IconButton></Tooltip>
         </Box>
       ),
     },
@@ -69,17 +70,19 @@ const CrudPage = ({ title, subtitle, singular, api, columns, campos, nuevoInicia
     <Box>
       <Header title={title} subtitle={subtitle}>
         {extraHeader}
-        <Button variant="contained" color="secondary" startIcon={<AddOutlined />} onClick={() => setEditando({})}>
-          Nuevo
-        </Button>
+        {!soloLectura && (
+          <Button variant="contained" color="secondary" startIcon={<AddOutlined />} onClick={() => setEditando({})}>
+            Nuevo
+          </Button>
+        )}
       </Header>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      <DataTable rows={filas} columns={columnas} loading={cargando} onRowDoubleClick={({ row }) => setEditando(row)} />
+      <DataTable rows={filas} columns={columnas} loading={cargando} onRowDoubleClick={soloLectura ? undefined : ({ row }) => setEditando(row)} />
 
       <FormDialog
         open={!!editando}
         title={editando?.id ? `Editar ${singular.toLowerCase()}` : `Nuevo ${singular.toLowerCase()}`}
-        campos={campos}
+        campos={typeof campos === "function" ? campos(!!editando?.id) : campos}
         inicial={editando?.id ? aFormulario(editando) : nuevoInicial}
         onClose={() => setEditando(null)}
         onSubmit={guardar}
@@ -87,7 +90,7 @@ const CrudPage = ({ title, subtitle, singular, api, columns, campos, nuevoInicia
       <ConfirmDialog
         open={!!borrando}
         title={`Eliminar ${singular.toLowerCase()}`}
-        message="Esta acción no se puede deshacer."
+        message={mensajeEliminar || "Esta acción no se puede deshacer."}
         confirmLabel="Eliminar"
         onCancel={() => setBorrando(null)}
         onConfirm={eliminar}

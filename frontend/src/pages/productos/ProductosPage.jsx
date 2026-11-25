@@ -2,6 +2,7 @@ import { Chip } from "@mui/material";
 import CrudPage from "../../components/CrudPage";
 import { productosApi } from "../../api";
 import { formatoMoneda } from "../../utils/format";
+import { useAuth } from "../../auth/AuthContext";
 
 const campos = [
   { name: "codigo", label: "Código (opcional)", xs: 4 },
@@ -23,6 +24,7 @@ const columns = [
 ];
 
 export default function ProductosPage() {
+  const { esAdmin } = useAuth();
   return (
     <CrudPage
       title="Productos y servicios"
@@ -32,6 +34,7 @@ export default function ProductosPage() {
       columns={columns}
       campos={campos}
       nuevoInicial={{ iva_porcentaje: 19, activo: true }}
+      soloLectura={!esAdmin}
     />
   );
 }

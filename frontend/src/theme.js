@@ -1,6 +1,6 @@
 import { createTheme, useTheme } from "@mui/material";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { aclarar, contraste, escala, esHex, mezclar, oscurecer } from "./utils/color";
+import { aclarar, ajustarContraste, contraste, escala, esHex, mezclar, oscurecer } from "./utils/color";
 
 /* ------------------------------------------------------------------
  * Marca: lo que cada negocio personaliza (se guarda en la tabla empresa)
@@ -44,7 +44,9 @@ export const extraerMarca = (empresa = {}) => ({
  *   acento     → color principal de la marca (botones, cifras, enlaces)
  *   secundario → encabezados de tablas, elementos activos
  *   rojo       → gastos, errores
- *   gray       → textos
+ *   gray       → textos y bordes (neutros "slate", levemente azulados)
+ * Sistema de diseño: minimalista/suizo para dashboards (UI UX Pro Max):
+ * superficies planas con borde de 1px, sin sombras pesadas, alto contraste.
  * ------------------------------------------------------------------ */
 export const tokens = (mode, marca = MARCA_DEFECTO) => {
   const { color_base: b, color_acento: a, color_secundario: s } = marca;
@@ -53,66 +55,206 @@ export const tokens = (mode, marca = MARCA_DEFECTO) => {
   const base = oscuro
     ? {
         100: aclarar(b, 0.8), 200: aclarar(b, 0.6), 300: aclarar(b, 0.4),
-        400: aclarar(b, 0.18), // paneles
+        400: aclarar(b, 0.07), // superficies (tarjetas, paneles, menú)
         500: b, // fondo
-        600: oscurecer(b, 0.2), 700: oscurecer(b, 0.4), 800: oscurecer(b, 0.6), 900: oscurecer(b, 0.8),
+        600: aclarar(b, 0.16), // bordes y separadores
+        700: oscurecer(b, 0.4), 800: oscurecer(b, 0.6), 900: oscurecer(b, 0.8),
       }
     : {
         100: oscurecer(b, 0.5), 200: oscurecer(b, 0.3), 300: b,
-        400: aclarar(b, 0.985), // paneles
-        500: aclarar(b, 0.93), // fondo
-        600: aclarar(b, 0.75), 700: aclarar(b, 0.6), 800: aclarar(b, 0.45), 900: aclarar(b, 0.3),
+        400: "#ffffff", // superficies
+        500: aclarar(b, 0.955), // fondo
+        600: aclarar(b, 0.86), // bordes y separadores
+        700: aclarar(b, 0.6), 800: aclarar(b, 0.45), 900: aclarar(b, 0.3),
       };
 
+  // Slate: 300 es el texto secundario y siempre cumple contraste ≥ 4.5:1 sobre las superficies
   const gray = oscuro
-    ? { 100: "#e0e0e0", 200: "#c2c2c2", 300: "#a3a3a3", 400: "#858585", 500: "#666666", 600: "#525252", 700: "#3d3d3d", 800: "#292929", 900: "#141414" }
-    : { 100: "#141414", 200: "#292929", 300: "#525252", 400: "#666666", 500: "#858585", 600: "#a3a3a3", 700: "#c2c2c2", 800: "#e0e0e0", 900: "#f5f5f5" };
+    ? { 100: "#f1f5f9", 200: "#e2e8f0", 300: "#cbd5e1", 400: "#94a3b8", 500: "#64748b", 600: "#475569", 700: "#334155", 800: "#1e293b", 900: "#0f172a" }
+    : { 100: "#0f172a", 200: "#1e293b", 300: "#475569", 400: "#64748b", 500: "#94a3b8", 600: "#cbd5e1", 700: "#e2e8f0", 800: "#f1f5f9", 900: "#f8fafc" };
 
   return {
     base,
     gray,
     acento: escala(a, !oscuro),
     secundario: escala(s, !oscuro),
-    rojo: escala("#db4f4a", !oscuro),
+    rojo: escala("#dc2626", !oscuro),
     texto_sobre_acento: contraste(a),
     texto_sobre_secundario: contraste(s),
     texto_sobre_base: contraste(b),
+    // Tokens semánticos
+    superficie: base[400],
+    borde: base[600],
+    texto: gray[100],
+    textoSuave: gray[300],
+    foco: a,
+    acentoSuave: oscuro ? mezclar(b, a, 0.16) : aclarar(a, 0.88), // fondo del ítem activo, chips suaves
+    // Colores para TEXTO e íconos: ajustados para cumplir 4.5:1 sobre las superficies con cualquier marca
+    acentoTexto: ajustarContraste(a, base[400]),
+    secundarioTexto: ajustarContraste(s, base[400]),
+    peligro: ajustarContraste(oscuro ? "#f87171" : "#b91c1c", base[400]),
+    exito: ajustarContraste(oscuro ? "#4ade80" : "#15803d", base[400]),
   };
 };
 
 /* ------------------------------------------------------------------
  * Tema de MUI
  * ------------------------------------------------------------------ */
-const fuente = ["Source Sans 3", "sans-serif"].join(",");
+const fuente = ["'Fira Sans'", "system-ui", "-apple-system", "'Segoe UI'", "sans-serif"].join(",");
+export const fuenteMono = ["'Fira Code'", "ui-monospace", "'Cascadia Code'", "monospace"].join(",");
+
+const RADIO = 10;
+const TRANSICION = "background-color 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease";
 
 export const themeSettings = (mode, marca) => {
-  const colores = tokens(mode, marca);
+  const c = tokens(mode, marca);
   const oscuro = mode === "dark";
+  const anilloFoco = `0 0 0 3px ${mezclar(oscuro ? marca.color_base : "#ffffff", marca.color_acento, 0.55)}`;
+
   return {
-    colores, // accesible con useColors()
+    colores: c, // accesible con useColors()
+    shape: { borderRadius: RADIO },
     palette: {
       mode,
-      primary: { main: oscuro ? colores.base[400] : colores.base[300] },
-      secondary: { main: marca.color_acento, contrastText: colores.texto_sobre_acento },
+      primary: { main: oscuro ? c.gray[200] : c.base[300] },
+      secondary: { main: marca.color_acento, contrastText: c.texto_sobre_acento },
       info: { main: marca.color_secundario },
-      neutral: { dark: colores.gray[700], main: colores.gray[500], light: colores.gray[100] },
-      background: {
-        default: colores.base[500],
-        paper: oscuro ? mezclar(marca.color_base, "#ffffff", 0.1) : "#ffffff",
-      },
+      error: { main: oscuro ? "#f87171" : "#b91c1c" },
+      success: { main: oscuro ? "#4ade80" : "#15803d", contrastText: oscuro ? "#052e16" : "#ffffff" }, // ≥ 4.5:1 en ambos modos
+      warning: { main: oscuro ? "#fbbf24" : "#b45309", contrastText: oscuro ? "#451a03" : "#ffffff" },
+      neutral: { dark: c.gray[700], main: c.gray[500], light: c.gray[100] },
+      text: { primary: c.texto, secondary: c.textoSuave },
+      divider: c.borde,
+      background: { default: c.base[500], paper: c.superficie },
     },
     typography: {
       fontFamily: fuente,
-      fontSize: 12,
-      h1: { fontFamily: fuente, fontSize: 40 },
-      h2: { fontFamily: fuente, fontSize: 32 },
-      h3: { fontFamily: fuente, fontSize: 24 },
-      h4: { fontFamily: fuente, fontSize: 20 },
-      h5: { fontFamily: fuente, fontSize: 16 },
-      h6: { fontFamily: fuente, fontSize: 14 },
+      fontSize: 14, // base 14px: denso pero legible (antes 12px)
+      h1: { fontFamily: fuente, fontSize: 34, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.15 },
+      h2: { fontFamily: fuente, fontSize: 28, fontWeight: 700, letterSpacing: "-0.015em", lineHeight: 1.2 },
+      h3: { fontFamily: fuente, fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em", lineHeight: 1.25 },
+      h4: { fontFamily: fuente, fontSize: 18, fontWeight: 600, lineHeight: 1.3 },
+      h5: { fontFamily: fuente, fontSize: 15, fontWeight: 500, lineHeight: 1.4 },
+      h6: { fontFamily: fuente, fontSize: 13, fontWeight: 500, lineHeight: 1.4 },
+      body1: { fontSize: 14, lineHeight: 1.55 },
+      body2: { fontSize: 13, lineHeight: 1.5 },
+      button: { fontWeight: 600, textTransform: "none", letterSpacing: 0 },
+      caption: { fontSize: 12 },
+      overline: { fontSize: 11, fontWeight: 600, letterSpacing: "0.08em" },
     },
     components: {
-      MuiPaper: { styleOverrides: { root: { backgroundImage: "none" } } },
+      MuiCssBaseline: {
+        styleOverrides: {
+          body: {
+            fontFeatureSettings: '"tnum" 1, "lnum" 1', // cifras alineadas en tablas y totales
+            WebkitFontSmoothing: "antialiased",
+          },
+          "::selection": { background: mezclar(c.superficie, marca.color_acento, 0.35) },
+          "*::-webkit-scrollbar": { width: 10, height: 10 },
+          "*::-webkit-scrollbar-thumb": { background: c.borde, borderRadius: 8, border: `2px solid ${c.base[500]}` },
+          "*::-webkit-scrollbar-track": { background: "transparent" },
+          // Accesibilidad: respetar "reducir movimiento" del sistema
+          "@media (prefers-reduced-motion: reduce)": {
+            "*, *::before, *::after": {
+              animationDuration: "0.01ms !important",
+              animationIterationCount: "1 !important",
+              transitionDuration: "0.01ms !important",
+              scrollBehavior: "auto !important",
+            },
+          },
+          ".tabular": { fontVariantNumeric: "tabular-nums" },
+          ".mono": { fontFamily: fuenteMono, fontFeatureSettings: "normal" },
+        },
+      },
+      // Foco visible por teclado en todo lo clicable (WCAG 2.4.7)
+      MuiButtonBase: {
+        defaultProps: { disableRipple: false },
+        styleOverrides: {
+          root: {
+            "&.Mui-focusVisible": { outline: `2px solid ${c.foco}`, outlineOffset: 2 },
+          },
+        },
+      },
+      MuiButton: {
+        defaultProps: { disableElevation: true },
+        styleOverrides: {
+          root: { borderRadius: RADIO, minHeight: 40, paddingInline: 16, transition: TRANSICION },
+          sizeSmall: { minHeight: 32, paddingInline: 12 },
+          sizeLarge: { minHeight: 48, fontSize: 15 },
+          outlined: { borderColor: c.borde },
+        },
+      },
+      MuiIconButton: {
+        styleOverrides: {
+          root: { borderRadius: RADIO - 2, transition: TRANSICION, "&:hover": { backgroundColor: mezclar(c.superficie, c.texto, 0.08) } },
+          sizeSmall: { padding: 6 }, // área ≥ 32px (WCAG 2.5.8 pide ≥ 24px)
+        },
+      },
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: {
+            borderRadius: RADIO,
+            backgroundColor: oscuro ? mezclar(c.superficie, "#000000", 0.15) : "#ffffff",
+            transition: TRANSICION,
+            "& .MuiOutlinedInput-notchedOutline": { borderColor: c.borde, transition: TRANSICION },
+            "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: c.gray[500] },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: marca.color_acento, borderWidth: 2 },
+            "&.Mui-focused": { boxShadow: anilloFoco },
+          },
+        },
+      },
+      MuiInputLabel: {
+        styleOverrides: { root: { "&.Mui-focused": { color: c.texto } } },
+      },
+      MuiFormHelperText: { styleOverrides: { root: { marginLeft: 2, color: c.textoSuave } } },
+      MuiPaper: {
+        styleOverrides: {
+          root: { backgroundImage: "none" },
+          outlined: { borderColor: c.borde },
+        },
+      },
+      MuiDialog: {
+        styleOverrides: {
+          paper: { borderRadius: 16, border: `1px solid ${c.borde}`, boxShadow: "0 24px 64px rgba(2,6,23,.35)" },
+        },
+      },
+      MuiDialogTitle: { styleOverrides: { root: { fontSize: 18, fontWeight: 600, paddingBottom: 8 } } },
+      MuiDialogActions: { styleOverrides: { root: { padding: "12px 24px 20px", gap: 8 } } },
+      MuiBackdrop: { styleOverrides: { root: { backgroundColor: "rgba(2,6,23,.6)" } } },
+      MuiMenu: {
+        styleOverrides: { paper: { border: `1px solid ${c.borde}`, boxShadow: "0 12px 32px rgba(2,6,23,.25)" } },
+      },
+      MuiAutocomplete: {
+        styleOverrides: { paper: { border: `1px solid ${c.borde}`, boxShadow: "0 12px 32px rgba(2,6,23,.25)" } },
+      },
+      MuiTooltip: {
+        defaultProps: { arrow: true, enterDelay: 300 },
+        styleOverrides: {
+          tooltip: { backgroundColor: oscuro ? c.gray[100] : c.gray[100], color: oscuro ? c.gray[900] : "#ffffff", fontSize: 12, padding: "6px 10px", borderRadius: 6 },
+          arrow: { color: c.gray[100] },
+        },
+      },
+      MuiChip: {
+        styleOverrides: {
+          root: { borderRadius: 999, fontWeight: 600, fontSize: 12 },
+          sizeSmall: { height: 24 },
+        },
+      },
+      MuiTableCell: {
+        styleOverrides: {
+          root: { borderColor: c.borde },
+          head: { color: c.textoSuave, fontWeight: 600, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.04em" },
+        },
+      },
+      MuiTab: {
+        styleOverrides: { root: { textTransform: "none", fontWeight: 600, fontSize: 14, minHeight: 44 } },
+      },
+      MuiTabs: { styleOverrides: { root: { minHeight: 44, borderBottom: `1px solid ${c.borde}` } } },
+      MuiToggleButton: { styleOverrides: { root: { textTransform: "none", fontWeight: 600, borderColor: c.borde } } },
+      MuiAlert: { styleOverrides: { root: { borderRadius: RADIO, alignItems: "center" } } },
+      MuiLinearProgress: { styleOverrides: { root: { borderRadius: 999 } } },
+      MuiDivider: { styleOverrides: { root: { borderColor: c.borde } } },
+      MuiSnackbarContent: { styleOverrides: { root: { borderRadius: RADIO } } },
     },
   };
 };

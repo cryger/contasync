@@ -13,12 +13,12 @@ const columns = [
   { field: "numero", headerName: "Número", width: 120 },
   { field: "fecha", headerName: "Fecha", width: 110, valueFormatter: ({ value }) => formatoFecha(value) },
   { field: "cliente_nombre", headerName: "Cliente", flex: 1, minWidth: 200 },
-  { field: "forma_pago", headerName: "Pago", width: 100 },
+  { field: "forma_pago", headerName: "Pago", width: 100, valueFormatter: ({ value }) => (value === "credito" ? "Crédito" : "Contado") },
   {
     field: "estado", headerName: "Estado", width: 120,
     renderCell: ({ value }) => <Chip size="small" label={ESTADOS_FACTURA[value]?.label} color={ESTADOS_FACTURA[value]?.color} />,
   },
-  { field: "total", headerName: "Total", width: 150, align: "right", headerAlign: "right", valueFormatter: ({ value }) => formatoMoneda(value) },
+  { field: "total", headerName: "Total", width: 150, align: "right", headerAlign: "right", valueFormatter: ({ value }) => formatoMoneda(value), cellClassName: "tabular" },
 ];
 
 export default function FacturasPage() {

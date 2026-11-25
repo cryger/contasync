@@ -14,7 +14,8 @@ import { calcularFactura, MEDIOS_PAGO } from "../../utils/factura";
 import { formatoMoneda, hoy } from "../../utils/format";
 import { descargarFacturaPDF } from "../../utils/pdfFactura";
 import { CAMPOS_CLIENTE } from "../clientes/ClientesPage";
-import { useColors } from "../../theme";
+import { estiloPanel } from "../../components/Panel";
+import { fuenteMono, useColors } from "../../theme";
 
 const CONSUMIDOR_FINAL = "222222222222";
 let siguienteKey = 1;
@@ -146,9 +147,9 @@ export default function NuevaFacturaPage() {
       <Grid container spacing={3}>
         {/* Columna principal */}
         <Grid item xs={12} lg={8.5}>
-          <Box bgcolor={colors.base[400]} p={2.5} borderRadius={2} mb={3}>
+          <Box {...estiloPanel(colors)} mb={3}>
             <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={6} display="flex" gap={1}>
+              <Grid item xs={12} md={5} display="flex" gap={1}>
                 <Autocomplete
                   fullWidth
                   size="small"
@@ -160,19 +161,19 @@ export default function NuevaFacturaPage() {
                   renderInput={(p) => <TextField {...p} label="Cliente" />}
                 />
                 <Tooltip title="Cliente nuevo">
-                  <IconButton onClick={() => setNuevoCliente(true)}><PersonAddAlt1Outlined /></IconButton>
+                  <IconButton aria-label="Crear cliente nuevo" onClick={() => setNuevoCliente(true)}><PersonAddAlt1Outlined /></IconButton>
                 </Tooltip>
               </Grid>
-              <Grid item xs={6} md={2}>
+              <Grid item xs={6} md={2.5}>
                 <TextField {...campo("fecha")} type="date" label="Fecha" InputLabelProps={{ shrink: true }} />
               </Grid>
-              <Grid item xs={6} md={2}>
+              <Grid item xs={6} md={2.25}>
                 <TextField {...campo("forma_pago")} select label="Forma de pago">
                   <MenuItem value="contado">Contado</MenuItem>
                   <MenuItem value="credito">Crédito</MenuItem>
                 </TextField>
               </Grid>
-              <Grid item xs={6} md={2}>
+              <Grid item xs={6} md={2.25}>
                 {enc.forma_pago === "credito" ? (
                   <TextField {...campo("vencimiento")} type="date" label="Vence" InputLabelProps={{ shrink: true }} />
                 ) : (
@@ -184,7 +185,7 @@ export default function NuevaFacturaPage() {
             </Grid>
           </Box>
 
-          <Box bgcolor={colors.base[400]} p={2.5} borderRadius={2}>
+          <Box {...estiloPanel(colors)}>
             <Box display="flex" gap={1} mb={2}>
               <Autocomplete
                 fullWidth
@@ -216,7 +217,7 @@ export default function NuevaFacturaPage() {
               </Button>
             </Box>
 
-            <Box overflow="auto">
+            <Box overflow="auto" tabIndex={0} role="region" aria-label="Detalle de ítems">
               <Table size="small" sx={{ minWidth: 820, "& input[type=number]": { MozAppearance: "textfield" }, "& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button": { WebkitAppearance: "none", margin: 0 } }}>
                 <TableHead>
                   <TableRow>
@@ -260,8 +261,8 @@ export default function NuevaFacturaPage() {
 
         {/* Resumen */}
         <Grid item xs={12} lg={3.5}>
-          <Box bgcolor={colors.base[400]} p={2.5} borderRadius={2} position={{ lg: "sticky" }} top={0}>
-            <Typography variant="h4" fontWeight="bold" mb={2}>Resumen</Typography>
+          <Box {...estiloPanel(colors)} position={{ lg: "sticky" }} top={0}>
+            <Typography component="h2" variant="h4" mb={2}>Resumen</Typography>
             {[
               ["Subtotal", calculo.subtotal],
               ["Descuento", -calculo.descuento],
@@ -275,7 +276,7 @@ export default function NuevaFacturaPage() {
             <Divider sx={{ my: 1.5 }} />
             <Box display="flex" justifyContent="space-between" alignItems="baseline" mb={2}>
               <Typography variant="h4">Total</Typography>
-              <Typography variant="h2" fontWeight="bold" color={colors.acento[500]}>
+              <Typography variant="h2" fontFamily={fuenteMono} fontWeight={500} color={colors.acentoTexto}>
                 {formatoMoneda(calculo.total)}
               </Typography>
             </Box>
@@ -283,7 +284,7 @@ export default function NuevaFacturaPage() {
             <Button fullWidth size="large" variant="contained" color="secondary" disabled={emitiendo || !items.length} onClick={emitir}>
               {emitiendo ? "Emitiendo…" : "Emitir factura"}
             </Button>
-            <Typography variant="body2" color={colors.gray[400]} textAlign="center" mt={1}>
+            <Typography variant="body2" color={colors.textoSuave} textAlign="center" mt={1}>
               Atajo: Ctrl + Enter
             </Typography>
           </Box>
@@ -303,7 +304,7 @@ export default function NuevaFacturaPage() {
         <DialogTitle>Factura {emitida?.numero} emitida</DialogTitle>
         <DialogContent>
           <Typography>{emitida?.cliente_nombre}</Typography>
-          <Typography variant="h3" fontWeight="bold" color={colors.acento[500]} mt={1}>
+          <Typography variant="h3" fontWeight="bold" color={colors.acentoTexto} mt={1}>
             {formatoMoneda(emitida?.total)}
           </Typography>
         </DialogContent>

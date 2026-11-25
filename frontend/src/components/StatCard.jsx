@@ -1,18 +1,39 @@
 /* eslint-disable react/prop-types */
-import { Box, Typography } from "@mui/material";
-import { useColors } from "../theme";
+import { Box, Skeleton, Typography } from "@mui/material";
+import { useColors, fuenteMono } from "../theme";
+import { mezclar } from "../utils/color";
 
-const StatCard = ({ title, value, subtitle, icon, tone = "green" }) => {
+/**
+ * Indicador (KPI): etiqueta, cifra grande con números tabulares, detalle e ícono en un recuadro de color.
+ * tone: "green" (acento) | "red" | "blue" (secundario). cargando → esqueleto con el mismo tamaño (sin saltos).
+ */
+const StatCard = ({ title, value, subtitle, icon, tone = "green", cargando = false }) => {
   const colors = useColors();
-  const accent = tone === "red" ? colors.rojo[500] : tone === "blue" ? colors.secundario[400] : colors.acento[500];
+  const color = tone === "red" ? colors.peligro : tone === "blue" ? colors.secundarioTexto : colors.acentoTexto;
+
   return (
-    <Box bgcolor={colors.base[400]} p={2.5} borderRadius={2} display="flex" gap={2} alignItems="center" minHeight={110}>
-      <Box sx={{ color: accent, "& svg": { fontSize: 34 } }}>{icon}</Box>
-      <Box minWidth={0}>
-        <Typography variant="h6" color={colors.gray[300]}>{title}</Typography>
-        <Typography variant="h3" fontWeight="bold" color={colors.gray[100]} noWrap>{value}</Typography>
-        {subtitle && <Typography variant="h6" color={accent}>{subtitle}</Typography>}
+    <Box bgcolor={colors.superficie} border={`1px solid ${colors.borde}`} borderRadius="12px" p={2.5} height="100%"
+      display="flex" flexDirection="column" gap={1.5} minHeight={128} aria-busy={cargando}>
+      <Box display="flex" alignItems="center" justifyContent="space-between" gap={1}>
+        <Typography variant="overline" color={colors.textoSuave} lineHeight={1.3}>{title}</Typography>
+        <Box aria-hidden width={36} height={36} borderRadius="10px" display="flex" alignItems="center" justifyContent="center"
+          flexShrink={0} bgcolor={mezclar(colors.superficie, color, 0.14)} color={color} sx={{ "& svg": { fontSize: 20 } }}>
+          {icon}
+        </Box>
       </Box>
+      {cargando ? (
+        <Skeleton variant="text" width="70%" height={40} />
+      ) : (
+        <Typography fontFamily={fuenteMono} fontWeight={500} fontSize={{ xs: 22, xl: 26 }} lineHeight={1.15} color={colors.texto}
+          sx={{ wordBreak: "break-word" }}>
+          {value}
+        </Typography>
+      )}
+      {subtitle && (
+        <Typography variant="body2" color={colors.textoSuave} mt="auto">
+          {cargando ? <Skeleton width="50%" /> : subtitle}
+        </Typography>
+      )}
     </Box>
   );
 };

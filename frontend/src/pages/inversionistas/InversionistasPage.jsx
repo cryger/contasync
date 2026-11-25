@@ -15,6 +15,7 @@ import useCarga from "../../hooks/useCarga";
 import { inversionistasApi } from "../../api";
 import { mensajeError } from "../../api/client";
 import { formatoFecha, formatoMoneda, formatoPorcentaje, hoy, inicioDeMes, leerNumero } from "../../utils/format";
+import { estiloPanel } from "../../components/Panel";
 import { useColors } from "../../theme";
 
 /* ---------- Pestaña 1: reparto de utilidades ---------- */
@@ -55,8 +56,8 @@ function Reparto() {
             </Grid>
           </Grid>
 
-          <Box bgcolor={colors.base[400]} p={2.5} borderRadius={2} overflow="auto">
-            <Typography variant="h4" fontWeight="bold" mb={0.5}>Reparto por inversionista</Typography>
+          <Box {...estiloPanel(colors)} overflow="auto" tabIndex={0} role="region" aria-label="Reparto por inversionista">
+            <Typography component="h2" variant="h4" mb={0.5}>Reparto por inversionista</Typography>
             <Typography variant="body2" color={colors.gray[300]} mb={2}>
               Participación = capital aportado ÷ capital total (aportes hasta la fecha final) · Ganancia = utilidad × participación ·
               Rentabilidad = ganancia ÷ capital del inversionista
@@ -82,11 +83,12 @@ function Reparto() {
                       <TableCell>
                         <Box display="flex" alignItems="center" gap={1}>
                           <LinearProgress variant="determinate" value={i.participacion} color="secondary"
+                            aria-label={`Participación de ${i.nombre}`}
                             sx={{ flex: 1, height: 8, borderRadius: 4 }} />
                           <Typography width={64} textAlign="right">{formatoPorcentaje(i.participacion)}</Typography>
                         </Box>
                       </TableCell>
-                      <TableCell align="right" sx={{ color: i.ganancia < 0 ? colors.rojo[500] : colors.acento[500], fontWeight: "bold" }}>
+                      <TableCell align="right" sx={{ color: i.ganancia < 0 ? colors.peligro : colors.exito, fontWeight: "bold" }}>
                         {formatoMoneda(i.ganancia)}
                       </TableCell>
                       <TableCell align="right">{formatoPorcentaje(i.rentabilidad)}</TableCell>
@@ -161,7 +163,7 @@ function AportesDialog({ inversionista, onClose }) {
                 <TableCell>{a.nota}</TableCell>
                 <TableCell align="right">{formatoMoneda(a.monto)}</TableCell>
                 <TableCell width={40}>
-                  <IconButton size="small" onClick={() => borrar(a.id)}><DeleteOutline fontSize="small" /></IconButton>
+                  <IconButton size="small" aria-label="Eliminar aporte" onClick={() => borrar(a.id)}><DeleteOutline fontSize="small" /></IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -207,7 +209,7 @@ function Inversionistas() {
         nuevoInicial={{ activo: true }}
         accionesExtra={(row) => (
           <Tooltip title="Aportes de capital">
-            <IconButton size="small" onClick={() => setVerAportes(row)}><SavingsOutlined fontSize="small" /></IconButton>
+            <IconButton size="small" aria-label={`Aportes de ${row.nombre}`} onClick={() => setVerAportes(row)}><SavingsOutlined fontSize="small" /></IconButton>
           </Tooltip>
         )}
       />

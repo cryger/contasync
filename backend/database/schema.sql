@@ -121,3 +121,55 @@ CREATE TABLE IF NOT EXISTS aportes (
   creado_en         TIMESTAMP     NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_aportes_inversionista ON aportes(inversionista_id);
+
+-- =============================================================
+--  Usuarios y acceso
+-- =============================================================
+CREATE TABLE IF NOT EXISTS usuarios (
+  id             SERIAL PRIMARY KEY,
+  nombre         VARCHAR(120) NOT NULL,
+  email          VARCHAR(120) NOT NULL UNIQUE,
+  password_hash  TEXT         NOT NULL,
+  rol            VARCHAR(20)  NOT NULL DEFAULT 'cajero' CHECK (rol IN ('admin', 'cajero')),
+  activo         BOOLEAN      NOT NULL DEFAULT TRUE,
+  ultimo_acceso  TIMESTAMP,
+  creado_en      TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+
+-- Quién emitió cada factura
+ALTER TABLE facturas ADD COLUMN IF NOT EXISTS usuario_id INTEGER REFERENCES usuarios(id);
+
+-- =============================================================
+--  Cobros mensuales automáticos (planes de cobro recurrente)
+-- =============================================================
+CREATE TABLE IF NOT EXISTS suscripciones (
+  id               SERIAL PRIMARY KEY,
+  cliente_id       INTEGER      NOT NULL REFERENCES clientes(id),
+  nombre           VARCHAR(120) NOT NULL,                        -- p. ej. "Plan mensual de hosting"
+  dia_facturacion  SMALLINT     NOT NULL DEFAULT 1 CHECK (dia_facturacion BETWEEN 1 AND 28),
+  dias_plazo       SMALLINT     NOT NULL DEFAULT 10 CHECK (dias_plazo BETWEEN 0 AND 90),
+  fecha_inicio     DATE         NOT NULL DEFAULT CURRENT_DATE,
+  fecha_fin        DATE,                                         -- vacío = indefinido
+  activo           BOOLEAN      NOT NULL DEFAULT TRUE,
+  notas            TEXT,
+  ultimo_periodo   CHAR(7),                                      -- último mes facturado (AAAA-MM)
+  creado_en        TIMESTAMP    NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS suscripcion_items (
+  id                    SERIAL PRIMARY KEY,
+  suscripcion_id        INTEGER       NOT NULL REFERENCES suscripciones(id) ON DELETE CASCADE,
+  producto_id           INTEGER       REFERENCES productos(id) ON DELETE SET NULL,
+  descripcion           VARCHAR(200)  NOT NULL,
+  cantidad              NUMERIC(12,2) NOT NULL CHECK (cantidad > 0),
+  precio_unitario       NUMERIC(14,2) NOT NULL CHECK (precio_unitario >= 0),
+  descuento_porcentaje  NUMERIC(5,2)  NOT NULL DEFAULT 0,
+  iva_porcentaje        NUMERIC(5,2)  NOT NULL DEFAULT 0
+);
+
+ALTER TABLE facturas ADD COLUMN IF NOT EXISTS suscripcion_id INTEGER REFERENCES suscripciones(id) ON DELETE SET NULL;
+ALTER TABLE facturas ADD COLUMN IF NOT EXISTS periodo        CHAR(7);    -- mes cobrado (AAAA-MM)
+ALTER TABLE facturas ADD COLUMN IF NOT EXISTS enviada_en     TIMESTAMP;  -- cuándo se envió al cliente
+-- Un solo cobro por plan y por mes, aunque el proceso corra varias veces
+CREATE UNIQUE INDEX IF NOT EXISTS ux_facturas_suscripcion_periodo
+  ON facturas (suscripcion_id, periodo) WHERE suscripcion_id IS NOT NULL;

@@ -1,30 +1,28 @@
-/* Font Family Import */
-@import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap");
-
-/* Global Style */
+/* Estilos globales mínimos: el resto vive en theme.js (MuiCssBaseline) */
 html,
 body,
 #root {
   height: 100%;
   width: 100%;
-  font-family: "Source Sans 3", sans-serif;
 }
 
-::-webkit-scrollbar {
-  width: 10px;
+html {
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation; /* elimina el retraso de 300 ms en pantallas táctiles */
 }
 
-/* Track */
-::-webkit-scrollbar-track {
-  background: #e0e0e0;
+/* Enlace "Saltar al contenido" para teclado */
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -48px;
+  z-index: 2000;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 150ms ease;
 }
-
-/* Handle */
-::-webkit-scrollbar-thumb {
-  background: #888;
-}
-
-/* Handle on hover */
-::-webkit-scrollbar-track:hover {
-  background: #555;
+.skip-link:focus {
+  top: 12px;
 }

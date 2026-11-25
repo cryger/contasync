@@ -29,11 +29,18 @@ export const luminancia = (hex) => {
   return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 };
 
+/** Relación de contraste WCAG entre dos colores (1 a 21) */
+export const relacionContraste = (a, b) => {
+  const [l1, l2] = [luminancia(a), luminancia(b)].sort((x, y) => y - x);
+  return (l1 + 0.05) / (l2 + 0.05);
+};
+
 /**
- * Color de texto legible (blanco o casi negro) sobre un fondo.
- * Prefiere blanco mientras su contraste sea razonable (≥ 2.5:1), como en botones naranja o rojos.
+ * Color de texto legible sobre un fondo: elige entre blanco y casi negro el que tenga MÁS contraste
+ * (WCAG 1.4.3). Así un botón naranja o amarillo lleva texto oscuro y uno azul o rojo, texto blanco.
  */
-export const contraste = (fondo) => (1.05 / (luminancia(fondo) + 0.05) >= 2.5 ? "#ffffff" : "#111418");
+export const contraste = (fondo) =>
+  relacionContraste(fondo, "#ffffff") >= relacionContraste(fondo, "#111418") ? "#ffffff" : "#111418";
 
 /**
  * Escala 100–900 a partir de un color (500 = el color).
@@ -53,4 +60,18 @@ export const escala = (hex, invertir = false) => {
   };
   if (!invertir) return e;
   return { 100: e[900], 200: e[800], 300: e[700], 400: e[600], 500: e[500], 600: e[400], 700: e[300], 800: e[200], 900: e[100] };
+};
+
+/**
+ * Aclara u oscurece un color lo mínimo necesario para que, usado como TEXTO sobre `fondo`,
+ * cumpla la relación de contraste pedida (4.5:1 por defecto, WCAG AA).
+ */
+export const ajustarContraste = (color, fondo, minimo = 4.5) => {
+  if (relacionContraste(color, fondo) >= minimo) return color;
+  const haciaBlanco = luminancia(fondo) < 0.5;
+  for (let t = 0.05; t <= 1; t += 0.05) {
+    const c = haciaBlanco ? aclarar(color, t) : oscurecer(color, t);
+    if (relacionContraste(c, fondo) >= minimo) return c;
+  }
+  return haciaBlanco ? "#ffffff" : "#000000";
 };

@@ -3,6 +3,7 @@ import autoTable from "jspdf-autotable";
 import { formatoFecha, formatoMoneda } from "./format";
 import { aclarar, contraste, hexARgb, mezclar, oscurecer } from "./color";
 import { extraerMarca } from "../theme";
+import { nombrePeriodo } from "./envio";
 
 const ESTADOS = { pagada: "PAGADA", pendiente: "PENDIENTE", anulada: "ANULADA" };
 
@@ -134,7 +135,7 @@ export async function descargarFacturaPDF(factura, empresa = {}, { guardar = tru
     [`Forma de pago: ${factura.forma_pago === "credito" ? "Crédito" : "Contado"}`, true],
     [`Medio: ${factura.medio_pago}`],
     [factura.vencimiento ? `Vence: ${formatoFecha(factura.vencimiento)}` : `Fecha: ${formatoFecha(factura.fecha)}`],
-    [" "],
+    [factura.periodo ? `Periodo: ${nombrePeriodo(factura.periodo)}` : " "],
   ]);
 
   /* ---------- Ítems ---------- */

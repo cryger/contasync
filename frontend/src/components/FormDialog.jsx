@@ -12,9 +12,10 @@ const FormDialog = ({ open, title, campos, inicial, onClose, onSubmit, submitLab
   const [valores, setValores] = useState({});
   const [guardando, setGuardando] = useState(false);
 
+  // Se cargan los valores solo al abrir, para no borrar lo que se está escribiendo
   useEffect(() => {
     if (open) setValores(inicial || {});
-  }, [open, inicial]);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (name) => (e) => setValores((v) => ({ ...v, [name]: e.target.value }));
 

@@ -6,6 +6,7 @@ import {
 import { ArrowBackOutlined, BlockOutlined, CheckCircleOutline, PictureAsPdfOutlined } from "@mui/icons-material";
 import Header from "../../components/Header";
 import ConfirmDialog from "../../components/ConfirmDialog";
+import BotonesEnvio from "../../components/BotonesEnvio";
 import { useNotify } from "../../components/Notifier";
 import useCarga from "../../hooks/useCarga";
 import { empresaApi, facturasApi } from "../../api";
@@ -14,12 +15,15 @@ import { ESTADOS_FACTURA } from "../../utils/factura";
 import { formatoFecha, formatoMoneda } from "../../utils/format";
 import { descargarFacturaPDF } from "../../utils/pdfFactura";
 import { useColors } from "../../theme";
+import { estiloPanel } from "../../components/Panel";
+import { useAuth } from "../../auth/AuthContext";
 
 export default function FacturaDetallePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const notify = useNotify();
   const colors = useColors();
+  const { esAdmin } = useAuth();
   const [anular, setAnular] = useState(false);
   const { data, setData, cargando, error } = useCarga(
     () => Promise.all([facturasApi.obtener(id), empresaApi.obtener()]), [id],
@@ -49,21 +53,24 @@ export default function FacturaDetallePage() {
         <Button variant="contained" color="secondary" startIcon={<PictureAsPdfOutlined />} onClick={() => descargarFacturaPDF(f, empresa)}>
           Descargar PDF
         </Button>
+        {f.estado !== "anulada" && (
+          <BotonesEnvio factura={f} empresa={empresa} onEnviada={(nueva) => setData([nueva, empresa])} />
+        )}
         {f.estado === "pendiente" && (
           <Button variant="outlined" color="success" startIcon={<CheckCircleOutline />} onClick={() => cambiarEstado("pagada")}>
             Marcar pagada
           </Button>
         )}
-        {f.estado !== "anulada" && (
+        {f.estado !== "anulada" && esAdmin && (
           <Button variant="outlined" color="error" startIcon={<BlockOutlined />} onClick={() => setAnular(true)}>Anular</Button>
         )}
       </Header>
 
-      <Box bgcolor={colors.base[400]} p={3} borderRadius={2}>
+      <Box {...estiloPanel(colors, 3)}>
         <Grid container spacing={2} mb={2}>
           <Grid item xs={12} md={6}>
             <Typography variant="h6" color={colors.gray[300]}>Cliente</Typography>
-            <Typography variant="h4" fontWeight="bold">{f.cliente_nombre}</Typography>
+            <Typography component="h2" variant="h4">{f.cliente_nombre}</Typography>
             <Typography>{f.cliente_tipo_documento} {f.cliente_identificacion}</Typography>
             <Typography color={colors.gray[300]}>
               {[f.cliente_telefono, f.cliente_email, f.cliente_direccion].filter(Boolean).join(" · ")}
@@ -73,10 +80,12 @@ export default function FacturaDetallePage() {
             <Chip label={est.label} color={est.color} sx={{ mb: 1 }} />
             <Typography>Forma de pago: {f.forma_pago} · {f.medio_pago}</Typography>
             {f.vencimiento && <Typography>Vence: {formatoFecha(f.vencimiento)}</Typography>}
+            {f.usuario_nombre && <Typography color={colors.gray[300]}>Emitida por {f.usuario_nombre}</Typography>}
+            {f.enviada_en && <Typography color={colors.gray[300]}>Enviada al cliente el {new Date(f.enviada_en).toLocaleDateString("es-CO")}</Typography>}
           </Grid>
         </Grid>
 
-        <Box overflow="auto">
+        <Box overflow="auto" tabIndex={0} role="region" aria-label="Detalle de ítems">
           <Table size="small">
             <TableHead>
               <TableRow>
@@ -113,7 +122,7 @@ export default function FacturaDetallePage() {
           <Divider sx={{ my: 1 }} />
           <Box display="flex" justifyContent="space-between">
             <Typography variant="h4">Total</Typography>
-            <Typography variant="h3" fontWeight="bold" color={colors.acento[500]}>{formatoMoneda(f.total)}</Typography>
+            <Typography variant="h3" fontWeight="bold" color={colors.acentoTexto}>{formatoMoneda(f.total)}</Typography>
           </Box>
         </Box>
         {f.notas && <Typography mt={2} color={colors.gray[300]}>Notas: {f.notas}</Typography>}
