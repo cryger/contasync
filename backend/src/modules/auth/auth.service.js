@@ -14,6 +14,9 @@ const ROLES = ['admin', 'cajero'];
 function obtenerSecreto() {
   const env = process.env.JWT_SECRET;
   if (env && env.length >= 24 && !env.startsWith('cambia_esto')) return env;
+  // En Vercel no se puede escribir en disco: se deriva una clave estable de la URL de la base (que es secreta)
+  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  if (process.env.VERCEL && url) return crypto.createHash('sha256').update(`contasync-jwt|${url}`).digest('hex');
   const archivo = path.join(__dirname, '..', '..', '..', '.jwt-secret');
   try {
     return fs.readFileSync(archivo, 'utf8').trim();
